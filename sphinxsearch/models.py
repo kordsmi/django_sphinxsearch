@@ -14,7 +14,7 @@ from sphinxsearch.utils import sphinx_escape
 class SphinxQuerySet(QuerySet):
     def __init__(self, model, **kwargs):
         kwargs.setdefault('query', sql.SphinxQuery(model))
-        super(SphinxQuerySet, self).__init__(model, **kwargs)
+        super().__init__(model, **kwargs)
 
     def _filter_or_exclude(self, negate, *args, **kwargs):
         args = list(args)
@@ -31,8 +31,7 @@ class SphinxQuerySet(QuerySet):
                 kwargs.pop(key, None)
             pass
 
-        return super(SphinxQuerySet, self)._filter_or_exclude(negate, *args,
-                                                              **kwargs)
+        return super()._filter_or_exclude(negate, *args, **kwargs)
 
     # noinspection PyProtectedMember
     def __get_field_lookup(self, key):
@@ -215,7 +214,7 @@ class SphinxQuerySet(QuerySet):
             c.close()
 
     def iterator(self, chunk_size=2000):
-        for row in super(SphinxQuerySet, self).iterator(chunk_size=chunk_size):
+        for row in super().iterator(chunk_size=chunk_size):
             yield row
         if getattr(self.query, 'with_meta', False):
             self._fetch_meta()
@@ -225,7 +224,7 @@ class SphinxQuerySet(QuerySet):
         # with_meta() should be handled separately.
 
         def _fetch_all(self):
-            super(SphinxQuerySet, self)._fetch_all()
+            super()._fetch_all()
             if getattr(self.query, 'with_meta', False):
                 self._fetch_meta()
 

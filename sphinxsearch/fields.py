@@ -53,7 +53,8 @@ class SphinxMultiField(models.IntegerField):
             return None
         if isinstance(value, int):
             return value
-        return [super(SphinxMultiField, self).get_prep_value(v) for v in value]
+        get_prep_value = super().get_prep_value
+        return [get_prep_value(v) for v in value]
 
     # noinspection PyUnusedLocal
     def from_db_value(self, value, expression, connection, context):

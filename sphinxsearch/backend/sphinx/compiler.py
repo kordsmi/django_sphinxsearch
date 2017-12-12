@@ -19,7 +19,7 @@ class SphinxQLCompiler(compiler.SQLCompiler):
     safe_options = ('ranker', 'field_weights', 'index_weights')
 
     def compile(self, node, select_format=False):
-        sql, params = super(SphinxQLCompiler, self).compile(node, select_format)
+        sql, params = super().compile(node, select_format)
         # FIXME: Search lookup removed from Django-2.0, is this ok still?
         # # substitute MATCH() arguments with sphinx-escaped params
         # if isinstance(node, Search):
@@ -30,7 +30,7 @@ class SphinxQLCompiler(compiler.SQLCompiler):
         return sql, params
 
     def get_order_by(self):
-        res = super(SphinxQLCompiler, self).get_order_by()
+        res = super().get_order_by()
 
         order_by = []
         for expr, params in res:
@@ -42,7 +42,7 @@ class SphinxQLCompiler(compiler.SQLCompiler):
         return order_by
 
     def get_group_by(self, select, order_by):
-        res = super(SphinxQLCompiler, self).get_group_by(select, order_by)
+        res = super().get_group_by(select, order_by)
 
         # override GROUP BY columns for sphinxsearch's "GROUP N BY" support
         group_by = getattr(self.query, 'group_by', None)
@@ -122,8 +122,7 @@ class SphinxQLCompiler(compiler.SQLCompiler):
                 None, None,
                 ['__where_result = %s'], (True,), None, None)
 
-        sql, args = super(SphinxQLCompiler, self).as_sql(with_limits,
-                                                         with_col_aliases)
+        sql, args = super().as_sql(with_limits, with_col_aliases)
 
         # empty SQL doesn't need patching
         if (sql, args) == ('', ()):
@@ -225,7 +224,7 @@ class SQLInsertCompiler(compiler.SQLInsertCompiler, SphinxQLCompiler):
 class SQLDeleteCompiler(compiler.SQLDeleteCompiler, SphinxQLCompiler):
     # noinspection PyMethodOverriding
     def as_sql(self):
-        sql, params = super(SQLDeleteCompiler, self).as_sql()
+        sql, params = super().as_sql()
 
         # empty SQL doesn't need patching
         if (sql, params) == ('', ()):
@@ -254,7 +253,7 @@ class SQLUpdateCompiler(compiler.SQLUpdateCompiler, SphinxQLCompiler):
                 # add match extra where
                 self._add_match_extra(match)
 
-            sql, args = super(SQLUpdateCompiler, self).as_sql()
+            sql, args = super().as_sql()
         return sql, args
 
     def is_single_row_update(self):

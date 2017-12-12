@@ -511,7 +511,7 @@ class CharPKTestCase(SphinxModelTestCase):
     model = models.CharPKModel
 
     def get_model_defaults(self):
-        defaults = super(CharPKTestCase, self).get_model_defaults()
+        defaults = super().get_model_defaults()
         defaults['docid'] = str(defaults['id'])
         return defaults
 
@@ -521,12 +521,12 @@ class CharPKTestCase(SphinxModelTestCase):
         DELETE FROM `testapp_charpkmodel` WHERE (IN(docid, '1')) does not work
         :return:
         """
-        super(CharPKTestCase, self).testDelete()
+        super().testDelete()
 
 
 class TestSphinxRouter(SphinxModelTestCaseBase):
     def setUp(self):
-        super(TestSphinxRouter, self).setUp()
+        super().setUp()
         self.router = SphinxRouter()
 
     def testSphinxModelDetection(self):
@@ -553,7 +553,7 @@ class EscapingTestCase(SphinxModelTestCaseBase):
     """ Checks escaping symbols"""
 
     def setUp(self):
-        super(EscapingTestCase, self).setUp()
+        super().setUp()
         self.obj.sphinx_field = 'sphinx'
         self.obj.save()
 

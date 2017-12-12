@@ -17,7 +17,7 @@ class SphinxCount(Count):
     template = '%(function)s(*)'
 
     def as_sql(self, compiler, connection, function=None, template=None):
-        sql, params = super(SphinxCount, self).as_sql(
+        sql, params = super().as_sql(
             compiler, connection, function=function, template=template)
         try:
             params.remove('*')
@@ -30,7 +30,7 @@ class SphinxWhereExpression(BaseExpression):
     def __init__(self, where, where_params):
         self.where = where
         self.where_params = where_params
-        super(SphinxWhereExpression, self).__init__(output_field=BooleanField())
+        super().__init__(output_field=BooleanField())
 
     def as_sql(self, compiler, connection):
         return self.where, self.where_params
@@ -49,9 +49,9 @@ class SphinxWhereNode(WhereNode):
         """
         Transform search, the keyword should not be quoted.
         """
-        return super(WhereNode, self).make_atom(child, qn, connection)
+        return super().make_atom(child, qn, connection)
         lvalue, lookup_type, value_annot, params_or_value = child
-        sql, params = super(SphinxWhereNode, self).make_atom(child, qn, connection)
+        sql, params = super().make_atom(child, qn, connection)
         if lookup_type == 'search':
             if hasattr(lvalue, 'process'):
                 try:
@@ -93,7 +93,7 @@ class SphinxQuery(Query):
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('where', SphinxWhereNode)
-        super(SphinxQuery, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def clone(self):
         query = super().clone()
@@ -149,7 +149,7 @@ class SphinxModelBase(ModelBase):
                 if not col_patched:
                     cls.patch_col_class(attr)
 
-        new_class = super(SphinxModelBase, cls).__new__(cls, name, bases, attrs)
+        new_class = super().__new__(cls, name, bases, attrs)
 
         # if have overriden primary key, it should be the first local field,
         # because of JSONField feature at jsonfield.subclassing.Creator.__set__
@@ -167,7 +167,7 @@ class SphinxModelBase(ModelBase):
         col_patched = getattr(value, '_col_patched', False)
         if not col_patched and isinstance(value, models.Field):
             cls.patch_col_class(value)
-        super(SphinxModelBase, cls).add_to_class(name, value)
+        super().add_to_class(name, value)
 
     @classmethod
     def patch_col_class(cls, field):
