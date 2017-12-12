@@ -2,8 +2,8 @@
 
 [SphinxSearch](http://sphinxsearch.com) database backend for [Django](https://www.djangoproject.com/).
 
-[![Build Status](https://travis-ci.org/rutube/django_sphinxsearch.svg)](https://travis-ci.org/rutube/django_sphinxsearch)
-[![codecov](https://codecov.io/gh/rutube/django_sphinxsearch/branch/master/graph/badge.svg)](https://codecov.io/gh/rutube/django_sphinxsearch)
+[![Build Status](https://travis-ci.org/tumb1er/django_sphinxsearch.svg)](https://travis-ci.org/tumb1er/django_sphinxsearch)
+[![codecov](https://codecov.io/gh/tumb1er/django_sphinxsearch/branch/master/graph/badge.svg)](https://codecov.io/gh/tumb1er/django_sphinxsearch)
 [![PyPI version](https://badge.fury.io/py/django_sphinxsearch.svg)](http://badge.fury.io/py/django_sphinxsearch)
 
 * Not a [django_sphinx_db](https://github.com/smartfile/django-sphinx-db) fork
@@ -135,7 +135,7 @@
 
 * Sphinxsearch engine has some issues with SQL-syntax support, and they vary
 from one version to another. I.e. float attributes are not comparable,
-string attributes were not comparible till v2.2.7.
+string attributes were not comparable till v2.2.7.
 * Without limits sphinxsearch returns only 20 matched documents.
 * uint attributes accept -1 but return it as unsigned 32bit integer.
 * bigint accept 2**63 + 1 but return it as signed 64bit integer.
