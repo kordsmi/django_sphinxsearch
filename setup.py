@@ -21,7 +21,7 @@ setup(
     license='Beerware',
     author='tumbler',
     author_email='zimbler@gmail.com',
-    description='Sphinxsearch database backend for django>=1.8',
+    description='Sphinxsearch database backend for django>=2.0',
     setup_requires=[
         'Django>=2.0,<2.1',
         'mysqlclient>=1.3.3,<1.4.0'

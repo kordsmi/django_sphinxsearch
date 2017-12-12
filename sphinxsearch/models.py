@@ -34,6 +34,7 @@ class SphinxQuerySet(QuerySet):
         return super(SphinxQuerySet, self)._filter_or_exclude(negate, *args,
                                                               **kwargs)
 
+    # noinspection PyProtectedMember
     def __get_field_lookup(self, key):
         tokens = key.split('__')
         if len(tokens) == 1:
@@ -55,8 +56,8 @@ class SphinxQuerySet(QuerySet):
                 result.append(self._negate_expression(negate, v))
             return result
         else:
-            if not isinstance(lookup, six.string_types):
-                lookup = six.text_type(lookup)
+            if not isinstance(lookup, str):
+                lookup = str(lookup)
 
             if not lookup.startswith('"'):
                 lookup = '"%s"' % lookup
@@ -94,6 +95,7 @@ class SphinxQuerySet(QuerySet):
         qs.query.with_meta = True
         return qs
 
+    # noinspection PyIncorrectDocstring
     def group_by(self, *args, **kwargs):
         """
         :param args: list of fields to group by
@@ -118,10 +120,13 @@ class SphinxQuerySet(QuerySet):
                 negate = True
                 group_arg = group_arg[1:]
                 # if group_arg isn't name of db_column, lets fix it
+
+                # noinspection PyBroadException
                 try:
+                    # noinspection PyProtectedMember
                     fld = self.model._meta.get_field(group_arg)
                     group_arg = fld.column
-                except:
+                except Exception:
                     pass
             else:
                 negate = False
@@ -136,6 +141,7 @@ class SphinxQuerySet(QuerySet):
         qs.query.group_by = qs.query.group_by or []
         for field_name in args:
             if field_name not in qs.query.extra_select:
+                # noinspection PyProtectedMember
                 field = self.model._meta.get_field(field_name)
                 qs.query.group_by.append(field.attname)
             else:
@@ -208,8 +214,8 @@ class SphinxQuerySet(QuerySet):
         finally:
             c.close()
 
-    def iterator(self):
-        for row in super(SphinxQuerySet, self).iterator():
+    def iterator(self, chunk_size=2000):
+        for row in super(SphinxQuerySet, self).iterator(chunk_size=chunk_size):
             yield row
         if getattr(self.query, 'with_meta', False):
             self._fetch_meta()
@@ -238,6 +244,8 @@ class SphinxManager(models.Manager):
         # defer loading them. Sphinx won't return them.
         # TODO: we probably need a way to keep these from being loaded
         # later if the attr is accessed.
+
+        # noinspection PyProtectedMember
         sphinx_fields = [field.name for field in self.model._meta.fields
                          if isinstance(field, SphinxField)]
 
@@ -256,7 +264,7 @@ class SphinxManager(models.Manager):
         return self.get_queryset().get(*args, **kw)
 
 
-class SphinxModel(six.with_metaclass(sql.SphinxModelBase, models.Model)):
+class SphinxModel(models.Model, metaclass=sql.SphinxModelBase):
     class Meta:
         abstract = True
 
