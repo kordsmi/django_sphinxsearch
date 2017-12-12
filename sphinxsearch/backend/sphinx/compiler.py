@@ -1,17 +1,16 @@
 # coding: utf-8
-from collections import OrderedDict
 import re
+
 from django.core.exceptions import FieldError
 from django.db import models
 from django.db.models.expressions import Random
-from django.db.models.lookups import Search, Exact
+from django.db.models.lookups import Exact
 from django.db.models.sql import compiler, AND
 from django.db.models.sql.constants import ORDER_DIR
 from django.db.models.sql.query import get_order_dir
-
 from django.utils import six
+
 from sphinxsearch import sql as sqls
-from sphinxsearch.utils import sphinx_escape
 
 
 class SphinxQLCompiler(compiler.SQLCompiler):
@@ -21,12 +20,12 @@ class SphinxQLCompiler(compiler.SQLCompiler):
 
     def compile(self, node, select_format=False):
         sql, params = super(SphinxQLCompiler, self).compile(node, select_format)
-
-        # substitute MATCH() arguments with sphinx-escaped params
-        if isinstance(node, Search):
-            search_text = sphinx_escape(params[0])
-            sql = sql % search_text
-            params = []
+        # FIXME: Search lookup removed from Django-2.0, is this ok still?
+        # # substitute MATCH() arguments with sphinx-escaped params
+        # if isinstance(node, Search):
+        #     search_text = sphinx_escape(params[0])
+        #     sql = sql % search_text
+        #     params = []
 
         return sql, params
 
@@ -284,7 +283,7 @@ class SQLUpdateCompiler(compiler.SQLUpdateCompiler, SphinxQLCompiler):
         self.pre_sql_setup()
         if not self.query.values:
             return '', ()
-        table = self.query.tables[0]
+        table = self.query.base_table
         qn = self.quote_name_unless_alias
         result = ['REPLACE INTO %s' % qn(table)]
         # noinspection PyProtectedMember

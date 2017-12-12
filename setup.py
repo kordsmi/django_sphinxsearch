@@ -1,10 +1,4 @@
 from distutils.core import setup
-import sys
-
-if sys.version_info < (3, 0):
-    mysql = 'MySQL-python'
-else:
-    mysql = 'PyMySQL'
 
 try:
     # noinspection PyPackageRequirements
@@ -29,7 +23,7 @@ setup(
     author_email='zimbler@gmail.com',
     description='Sphinxsearch database backend for django>=1.8',
     setup_requires=[
-        'Django>=1.8',
-        mysql
+        'Django>=2.0,<2.1',
+        'mysqlclient>=1.3.3,<1.4.0'
     ],
 )

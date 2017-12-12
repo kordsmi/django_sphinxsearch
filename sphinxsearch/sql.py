@@ -95,8 +95,8 @@ class SphinxQuery(Query):
         kwargs.setdefault('where', SphinxWhereNode)
         super(SphinxQuery, self).__init__(*args, **kwargs)
 
-    def clone(self, klass=None, memo=None, **kwargs):
-        query = super(SphinxQuery, self).clone(klass=klass, memo=memo, **kwargs)
+    def clone(self):
+        query = super().clone()
         for attr_name in self._clonable:
             value = getattr(self, attr_name, None)
             if value:

@@ -39,16 +39,19 @@ class FieldMixin(spx_models.SphinxModel):
 
 
 class TestModel(FieldMixin, spx_models.SphinxModel):
-    pass
+    class Meta:
+        app_label = 'testapp'
 
 
 class DefaultDjangoModel(models.Model):
-    pass
+    class Meta:
+        app_label = 'testapp'
 
 
 class OverridenSphinxModel(six.with_metaclass(sql.SphinxModelBase, models.Model)):
     class Meta:
         managed = False
+        app_label = 'testapp'
 
     _excluded_update_fields = (
        models.CharField,
@@ -74,6 +77,7 @@ class ForcedPKModel(FieldMixin, spx_models.SphinxModel):
 
     class Meta:
         db_table = 'testapp_testmodel'
+        app_label = 'testapp'
 
     id = models.BigIntegerField(primary_key=True)
 
@@ -81,6 +85,7 @@ class ForcedPKModel(FieldMixin, spx_models.SphinxModel):
 class ModelWithAllDbColumnFields(spx_models.SphinxModel):
     class Meta:
         db_table = 'testapp_testmodel_aliased'
+        app_label = 'testapp'
 
     sphinx_field = spx_models.SphinxField(default='', db_column='_sphinx_field')
     other_field = spx_models.SphinxField(default='', db_column='_other_field')
@@ -101,6 +106,8 @@ class ModelWithAllDbColumnFields(spx_models.SphinxModel):
 
 
 class CharPKModel(FieldMixin, spx_models.SphinxModel):
+    class Meta:
+        app_label = 'testapp'
 
     docid = spx_models.SphinxField(primary_key=True)
     id = spx_models.SphinxBigIntegerField(unique=True)
