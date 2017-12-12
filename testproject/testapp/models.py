@@ -3,7 +3,6 @@
 # $Id: $
 import json
 
-import six
 from datetime import datetime
 from django.db import models
 
@@ -15,6 +14,7 @@ from sphinxsearch import models as spx_models
 
 class Django10CompatJSONField(JSONField):
 
+    # noinspection PyMethodMayBeStatic,PyUnusedLocal
     def from_db_value(self, value, expression, connection, context):
         # In Django-1.10 python value is loaded in this method
         if value is None:
@@ -39,16 +39,19 @@ class FieldMixin(spx_models.SphinxModel):
 
 
 class TestModel(FieldMixin, spx_models.SphinxModel):
-    pass
+    class Meta:
+        app_label = 'testapp'
 
 
 class DefaultDjangoModel(models.Model):
-    pass
+    class Meta:
+        app_label = 'testapp'
 
 
-class OverridenSphinxModel(six.with_metaclass(sql.SphinxModelBase, models.Model)):
+class OverridenSphinxModel(models.Model, metaclass=sql.SphinxModelBase):
     class Meta:
         managed = False
+        app_label = 'testapp'
 
     _excluded_update_fields = (
        models.CharField,
@@ -74,6 +77,7 @@ class ForcedPKModel(FieldMixin, spx_models.SphinxModel):
 
     class Meta:
         db_table = 'testapp_testmodel'
+        app_label = 'testapp'
 
     id = models.BigIntegerField(primary_key=True)
 
@@ -81,11 +85,14 @@ class ForcedPKModel(FieldMixin, spx_models.SphinxModel):
 class ModelWithAllDbColumnFields(spx_models.SphinxModel):
     class Meta:
         db_table = 'testapp_testmodel_aliased'
+        app_label = 'testapp'
 
     sphinx_field = spx_models.SphinxField(default='', db_column='_sphinx_field')
     other_field = spx_models.SphinxField(default='', db_column='_other_field')
-    attr_uint = spx_models.SphinxIntegerField(default=0, db_column='_attr_uint_')
-    attr_bigint = spx_models.SphinxBigIntegerField(default=0, db_column='_attr_bigint')
+    attr_uint = spx_models.SphinxIntegerField(
+        default=0, db_column='_attr_uint_')
+    attr_bigint = spx_models.SphinxBigIntegerField(
+        default=0, db_column='_attr_bigint')
     attr_float = models.FloatField(default=0.0, db_column='_attr_float')
     attr_timestamp = spx_models.SphinxDateTimeField(default=datetime.now,
                                                     db_column='_attr_timestamp')
@@ -101,6 +108,8 @@ class ModelWithAllDbColumnFields(spx_models.SphinxModel):
 
 
 class CharPKModel(FieldMixin, spx_models.SphinxModel):
+    class Meta:
+        app_label = 'testapp'
 
     docid = spx_models.SphinxField(primary_key=True)
     id = spx_models.SphinxBigIntegerField(unique=True)

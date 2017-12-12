@@ -1,17 +1,16 @@
 # coding: utf-8
-from collections import OrderedDict
 import re
+
 from django.core.exceptions import FieldError
 from django.db import models
 from django.db.models.expressions import Random
-from django.db.models.lookups import Search, Exact
+from django.db.models.lookups import Exact
 from django.db.models.sql import compiler, AND
 from django.db.models.sql.constants import ORDER_DIR
+# noinspection PyProtectedMember
 from django.db.models.sql.query import get_order_dir
 
-from django.utils import six
 from sphinxsearch import sql as sqls
-from sphinxsearch.utils import sphinx_escape
 
 
 class SphinxQLCompiler(compiler.SQLCompiler):
@@ -20,18 +19,18 @@ class SphinxQLCompiler(compiler.SQLCompiler):
     safe_options = ('ranker', 'field_weights', 'index_weights')
 
     def compile(self, node, select_format=False):
-        sql, params = super(SphinxQLCompiler, self).compile(node, select_format)
-
-        # substitute MATCH() arguments with sphinx-escaped params
-        if isinstance(node, Search):
-            search_text = sphinx_escape(params[0])
-            sql = sql % search_text
-            params = []
+        sql, params = super().compile(node, select_format)
+        # FIXME: Search lookup removed from Django-2.0, is this ok still?
+        # # substitute MATCH() arguments with sphinx-escaped params
+        # if isinstance(node, Search):
+        #     search_text = sphinx_escape(params[0])
+        #     sql = sql % search_text
+        #     params = []
 
         return sql, params
 
     def get_order_by(self):
-        res = super(SphinxQLCompiler, self).get_order_by()
+        res = super().get_order_by()
 
         order_by = []
         for expr, params in res:
@@ -43,11 +42,12 @@ class SphinxQLCompiler(compiler.SQLCompiler):
         return order_by
 
     def get_group_by(self, select, order_by):
-        res = super(SphinxQLCompiler, self).get_group_by(select, order_by)
+        res = super().get_group_by(select, order_by)
 
         # override GROUP BY columns for sphinxsearch's "GROUP N BY" support
         group_by = getattr(self.query, 'group_by', None)
         if group_by:
+            # noinspection PyProtectedMember
             fields = self.query.model._meta.fields
             field_columns = [f.column for f in fields if f.attname in group_by]
             return [r for r in res if r[0] in field_columns]
@@ -76,9 +76,11 @@ class SphinxQLCompiler(compiler.SQLCompiler):
         :return: MATCH expression
         :rtype: str
         """""
-        if isinstance(values_list, six.string_types):
+        if isinstance(values_list, str):
             return values_list
-        ensure_list = lambda s:  [s] if isinstance(s, six.string_types) else s
+
+        def ensure_list(s):
+            return [s] if isinstance(s, str) else s
         values_list = [item for s in values_list for item in ensure_list(s)]
         positive_list = filter(lambda s: not s.startswith('-'), values_list)
         negative_list = filter(lambda s: s.startswith('-'), values_list)
@@ -120,8 +122,7 @@ class SphinxQLCompiler(compiler.SQLCompiler):
                 None, None,
                 ['__where_result = %s'], (True,), None, None)
 
-        sql, args = super(SphinxQLCompiler, self).as_sql(with_limits,
-                                                         with_col_aliases)
+        sql, args = super().as_sql(with_limits, with_col_aliases)
 
         # empty SQL doesn't need patching
         if (sql, args) == ('', ()):
@@ -184,7 +185,7 @@ class SphinxQLCompiler(compiler.SQLCompiler):
 
         # format expression to MATCH against any indexed fields
         if all_fields_lookup:
-            if isinstance(all_fields_lookup, six.string_types):
+            if isinstance(all_fields_lookup, str):
                 expression.append(all_fields_lookup)
                 all_field_expr.append(all_fields_lookup)
             else:
@@ -204,8 +205,8 @@ class SphinxQLCompiler(compiler.SQLCompiler):
             expression.append("(%s)" % self._serialize(lookup))
 
         # handle non-ascii characters in search expressions
-        decode = lambda _: _.decode("utf-8") if type(
-            _) is six.binary_type else _
+        def decode(s):
+            return s.decode("utf-8") if type(s) is bytes else s
         match_expr = u"MATCH('%s')" % u' '.join(map(decode, expression))
 
         # add MATCH() to query.where
@@ -221,14 +222,15 @@ class SQLInsertCompiler(compiler.SQLInsertCompiler, SphinxQLCompiler):
 
 
 class SQLDeleteCompiler(compiler.SQLDeleteCompiler, SphinxQLCompiler):
+    # noinspection PyMethodOverriding
     def as_sql(self):
-        sql, params = super(SQLDeleteCompiler, self).as_sql()
+        sql, params = super().as_sql()
 
         # empty SQL doesn't need patching
         if (sql, params) == ('', ()):
             return sql, params
 
-        sql = re.sub(r'\(IN\((\w+),\s([\w\s\%,]+)\)\)', '\\1 IN (\\2)', sql)
+        sql = re.sub(r'\(IN\((\w+),\s([\w\s%,]+)\)\)', '\\1 IN (\\2)', sql)
         return sql, params
 
 
@@ -251,7 +253,7 @@ class SQLUpdateCompiler(compiler.SQLUpdateCompiler, SphinxQLCompiler):
                 # add match extra where
                 self._add_match_extra(match)
 
-            sql, args = super(SQLUpdateCompiler, self).as_sql()
+            sql, args = super().as_sql()
         return sql, args
 
     def is_single_row_update(self):
@@ -261,6 +263,7 @@ class SQLUpdateCompiler(compiler.SQLUpdateCompiler, SphinxQLCompiler):
         if len(where.children) == 1:
             node = where.children[0]
         elif match:
+            # noinspection PyProtectedMember
             meta = self.query.model._meta
             pk_match = match.get(meta.pk.attname)
             if pk_match is not None:
@@ -284,7 +287,7 @@ class SQLUpdateCompiler(compiler.SQLUpdateCompiler, SphinxQLCompiler):
         self.pre_sql_setup()
         if not self.query.values:
             return '', ()
-        table = self.query.tables[0]
+        table = self.query.base_table
         qn = self.quote_name_unless_alias
         result = ['REPLACE INTO %s' % qn(table)]
         # noinspection PyProtectedMember

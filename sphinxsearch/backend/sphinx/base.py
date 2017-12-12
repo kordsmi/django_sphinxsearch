@@ -69,7 +69,7 @@ class SphinxFeatures(base.DatabaseFeatures):
 
 class DatabaseWrapper(base.DatabaseWrapper):
     def __init__(self, *args, **kwargs):
-        super(DatabaseWrapper, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.ops = SphinxOperations(self)
         self.creation = SphinxCreation(self)
         self.features = SphinxFeatures(self)

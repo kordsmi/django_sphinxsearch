@@ -1,25 +1,17 @@
 language: python
 python:
-  - "2.7"
   - "3.4"
   - "3.5"
   - "3.6"
 
 env:
-  - DJANGO=1.8
-  - DJANGO=1.9
-  - DJANGO=1.10
-  - DJANGO=1.11
-
-matrix:
-  exclude:
-  - python: "3.3"
-    env: DJANGO=1.9
-  - python: "3.3"
-    env: DJANGO=1.10
+  - DJANGO=2.0
 
 # command to install dependencies
 install:
+  - sudo add-apt-repository ppa:builds/sphinxsearch-rel22 -y
+  - sudo apt-get update
+  - sudo apt-get install -y sphinxsearch
   - pip install Django==$DJANGO
   - pip install -r test-requires.txt
   - pip install codecov
