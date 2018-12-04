@@ -1,6 +1,8 @@
 # coding: utf-8
 
 # $Id: $
+import re
+
 import sys
 from datetime import datetime, timedelta
 
@@ -359,6 +361,7 @@ class SphinxModelTestCase(SphinxModelTestCaseBase):
         self.assertEqual(len(expected), len(result))
 
         query = str(self.model.objects.order_by('?')[:2].query)
+        query = re.sub(r'\s+', ' ', query)
         self.assertTrue(query.endswith("ORDER BY RAND() LIMIT 2"),
                         msg="invalid query: %s" % query)
         list(self.model.objects.order_by())
