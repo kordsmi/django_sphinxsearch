@@ -1,7 +1,7 @@
 import os
 import re
 import subprocess
-from distutils.core import setup
+from setuptools import setup
 from pathlib import Path
 
 with open('README.md') as f:
@@ -48,8 +48,11 @@ def get_version():
             version += '.dev1'
     else:
         # Extract the version from the PKG-INFO file.
-        with open(str(d.joinpath(f'{package_name}.egg-info/PKG-INFO'))) as v:
-            version = version_re.search(v.read()).group(1)
+        try:
+            with open('PKG-INFO') as v:
+                version = version_re.search(v.read()).group(1)
+        except FileNotFoundError:
+            version = None
 
     return version
 
