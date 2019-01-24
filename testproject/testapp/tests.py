@@ -1,8 +1,4 @@
-# coding: utf-8
-
-# $Id: $
 import re
-
 import sys
 from datetime import datetime, timedelta
 
@@ -10,13 +6,11 @@ from django.conf import settings
 from django.db import connections
 from django.db.models import Sum, Q
 from django.db.utils import ProgrammingError
-from django.test import TransactionTestCase
-from django.test.utils import CaptureQueriesContext
-from unittest import expectedFailure
+from django.test import TransactionTestCase, utils
 
+from sphinxsearch.routers import SphinxRouter
 from sphinxsearch.utils import sphinx_escape
 from testapp import models
-from sphinxsearch.routers import SphinxRouter
 
 
 class SphinxModelTestCaseBase(TransactionTestCase):
@@ -36,17 +30,18 @@ class SphinxModelTestCaseBase(TransactionTestCase):
     def setUp(self):
         c = connections[settings.SPHINX_DATABASE_NAME]
         self.no_string_compare = c.mysql_version < (2, 2, 7)
+        self.multi64_is_broken = c.mysql_version >= (3, 0, 0)
         self.truncate_model()
         self.now = datetime.now().replace(microsecond=0)
         self.defaults = self.get_model_defaults()
-        self.spx_queries = CaptureQueriesContext(
+        self.spx_queries = utils.CaptureQueriesContext(
             connections[settings.SPHINX_DATABASE_NAME])
         self.spx_queries.__enter__()
         self.obj = self.model.objects.create(**self.defaults)
 
     def get_model_defaults(self):
-        return {
-            'id': self.newid(),
+        defaults = {
+            'id': self.new_id(),
             'sphinx_field': "hello sphinx field",
             'attr_uint': 100500,
             'attr_bool': True,
@@ -58,13 +53,17 @@ class SphinxModelTestCaseBase(TransactionTestCase):
             'attr_string': "hello sphinx attr",
             "attr_json": {"json": "test"},
         }
+        if self.multi64_is_broken:  # pragma: no cover
+            defaults['attr_multi_64'] = [2 ** 30, 2 ** 31]
+        return defaults
 
     @classmethod
-    def newid(cls):
+    def new_id(cls):
         cls._id += 1
         return cls._id
 
-    def reload_object(self, obj):
+    @staticmethod
+    def reload_object(obj):
         return obj._meta.model.objects.get(pk=obj.pk)
 
     def assertObjectEqualsToDefaults(self, other, defaults=None):
@@ -74,12 +73,13 @@ class SphinxModelTestCaseBase(TransactionTestCase):
         for k in defaults.keys():
             if k == 'sphinx_field':
                 continue
-            self.assertEqual(result[k], defaults[k])
+            self.assertEqual(result[k], defaults[k], msg=k)
 
     def tearDown(self):
         self.spx_queries.__exit__(*sys.exc_info())
-        for query in self.spx_queries.captured_queries:
-            print(query['sql'])
+        if getattr(self, 'print_queries', False):
+            for query in self.spx_queries.captured_queries:
+                print(query['sql'])
 
 
 class SphinxModelTestCase(SphinxModelTestCaseBase):
@@ -103,7 +103,8 @@ class SphinxModelTestCase(SphinxModelTestCaseBase):
             self.assertObjectEqualsToDefaults(other)
 
     def testExtraWhere(self):
-        qs = list(self.model.objects.extra(select={'const': 0}, where=['const=0']))
+        qs = list(self.model.objects.extra(select={'const': 0},
+                                           where=['const=0']))
         self.assertEqual(len(qs), 1)
 
     def testGroupByExtraSelect(self):
@@ -180,12 +181,15 @@ class SphinxModelTestCase(SphinxModelTestCaseBase):
         new_values = {
             'attr_uint': 200,
             'attr_bool': False,
-            'attr_bigint': 2**35,
+            'attr_bigint': 2 ** 35,
             'attr_float': 5.4321,
-            'attr_multi': [6,7,8],
-            'attr_multi_64': [2**34, 2**35],
+            'attr_multi': [6, 7, 8],
+            'attr_multi_64': [2 ** 34, 2 ** 35],
             'attr_timestamp': self.now + timedelta(seconds=60),
         }
+        if self.multi64_is_broken:  # pragma: no cover
+            # updates at 3.0.1 - 3.1.1 only work till 2^32 - 1
+            new_values['attr_multi_64'] = [2 ** 30, 2 ** 32 - 1]
 
         for k, v in new_values.items():
             setattr(self.obj, k, v)
@@ -234,7 +238,6 @@ class SphinxModelTestCase(SphinxModelTestCaseBase):
         qs = self.model.objects.all().values_list('id', flat=True)
         self.assertListEqual(list(qs), expected[:3] + expected[7:])
 
-
     def testDjangoSearch(self):
         other = self.model.objects.filter(sphinx_field__search="hello")[0]
         self.assertEqual(other.id, self.obj.id)
@@ -261,11 +264,11 @@ class SphinxModelTestCase(SphinxModelTestCaseBase):
     def test64BitNumerics(self):
         new_values = {
             # 32 bit unsigned int
-            'attr_uint': 2**31 + 1,
-            'attr_multi': [2**31 + 1],
+            'attr_uint': 2 ** 31 + 1,
+            'attr_multi': [2 ** 31 + 1],
             # 64 bit signed int
-            'attr_bigint': 2**63 + 1 - 2**64,
-            'attr_multi_64': [2**63 + 1 - 2**64]
+            'attr_bigint': 2 ** 63 + 1 - 2 ** 64,
+            'attr_multi_64': [2 ** 63 + 1 - 2 ** 64]
         }
         for k, v in new_values.items():
             setattr(self.obj, k, v)
@@ -277,7 +280,7 @@ class SphinxModelTestCase(SphinxModelTestCaseBase):
         self.assertObjectEqualsToDefaults(other, defaults=new_values)
 
     def testOptionsClause(self):
-        self.defaults['id'] = self.newid()
+        self.defaults['id'] = self.new_id()
         self.model.objects.create(**self.defaults)
 
         qs = list(self.model.objects.options(
@@ -292,12 +295,12 @@ class SphinxModelTestCase(SphinxModelTestCaseBase):
     def create_multiple_models(self):
         expected = [self.obj.id]
         for i in range(10):
-            id = self.newid()
-            self.model.objects.create(id=id,
+            docid = self.new_id()
+            self.model.objects.create(id=docid,
                                       attr_json={},
                                       attr_uint=i,
                                       attr_timestamp=self.now)
-            expected.append(id)
+            expected.append(docid)
         return expected
 
     def testExclude(self):
@@ -367,16 +370,17 @@ class SphinxModelTestCase(SphinxModelTestCaseBase):
         list(self.model.objects.order_by())
 
     def testGroupBy(self):
-        m1 = self.model.objects.create(id=self.newid(),
-                                       attr_uint=10, attr_float=1)
-        m2 = self.model.objects.create(id=self.newid(),
+        self.model.objects.create(id=self.new_id(),
+                                  attr_uint=10, attr_float=1)
+        m2 = self.model.objects.create(id=self.new_id(),
                                        attr_uint=10, attr_float=2)
-        m3 = self.model.objects.create(id=self.newid(),
+        m3 = self.model.objects.create(id=self.new_id(),
                                        attr_uint=20, attr_float=2)
-        m4 = self.model.objects.create(id=self.newid(),
-                                       attr_uint=10, attr_float=1)
+        self.model.objects.create(id=self.new_id(),
+                                  attr_uint=10, attr_float=1)
 
-        qs = self.model.objects.defer('attr_json', 'attr_multi', 'attr_multi_64')
+        qs = self.model.objects.defer('attr_json', 'attr_multi',
+                                      'attr_multi_64')
         qs = list(qs.group_by('attr_uint',
                               group_limit=1,
                               group_order_by='-attr_float'))
@@ -393,7 +397,8 @@ class SphinxModelTestCase(SphinxModelTestCaseBase):
 
     def testSphinxFieldExactExclude(self):
         sphinx_field = self.defaults['sphinx_field']
-        qs = list(self.model.objects.match('hello').exclude(sphinx_field=sphinx_field))
+        qs = list(self.model.objects.match('hello').exclude(
+            sphinx_field=sphinx_field))
         self.assertEqual(len(qs), 0)
 
     def testCount(self):
@@ -460,7 +465,7 @@ class SphinxModelTestCase(SphinxModelTestCaseBase):
         result = self.model.objects.filter(Q(attr_multi__in=[1, 3]))
         self.assertEqual(total - 1, len(result))
         for item in result:
-            self.assertTrue(set([1, 3]) and set(item.attr_multi))
+            self.assertTrue({1, 3} and set(item.attr_multi))
 
         # same result
         result = self.model.objects.filter(Q(attr_multi__in=[1, 3, 999]))
@@ -485,6 +490,7 @@ class SphinxModelTestCase(SphinxModelTestCaseBase):
         result = self.model.objects.filter(~Q(attr_multi__in=[total - 1, 999]))
         self.assertEqual(total - 2, len(result))
 
+        item = None
         for item in result:
             self.assertNotIn(total - 1, item.attr_multi)
             self.assertNotIn(999, item.attr_multi)
@@ -517,14 +523,6 @@ class CharPKTestCase(SphinxModelTestCase):
         defaults = super().get_model_defaults()
         defaults['docid'] = str(defaults['id'])
         return defaults
-
-    @expectedFailure
-    def testDelete(self):
-        """
-        DELETE FROM `testapp_charpkmodel` WHERE (IN(docid, '1')) does not work
-        :return:
-        """
-        super().testDelete()
 
 
 class TestSphinxRouter(SphinxModelTestCaseBase):
@@ -574,7 +572,7 @@ class EscapingTestCase(SphinxModelTestCaseBase):
         """
         Any sphinxql operator should not match document if escaped properly.
         """
-        operators = '=<>()|!@~&/^$\-\'\"\\'
+        operators = '=<>()|!@~&/^$-\'\"\\'
         for o in operators:
             res = self.query("sphinx operators %s" % o)
             self.assertEqual(len(res), 0)

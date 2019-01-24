@@ -49,6 +49,10 @@ class SphinxCreation(creation.DatabaseCreation):
         # NOOP, we created nothing, nothing to destroy.
         return
 
+    def clone_test_db(self, suffix, verbosity=1, autoclobber=False,
+                      keepdb=False):
+        return super().clone_test_db()
+
 
 class SphinxFeatures(base.DatabaseFeatures):
     # The following can be useful for unit testing, with multiple databases
