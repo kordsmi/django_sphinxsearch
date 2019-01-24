@@ -20,13 +20,13 @@ class SphinxField(models.TextField):
 class SphinxDateTimeField(models.FloatField):
     """ Sphinx timestamp field for sql_attr_timestamp and rt_attr_timestamp.
 
-    NB: sphinxsearch doens't store microseconds, if necessary, describe
+    NB: sphinxsearch doesn't store microseconds, if necessary, describe
         field as sql_attr_float in config.
     """
 
     def get_prep_value(self, value):
         if isinstance(value, (datetime.datetime, datetime.date)):
-            return time.mktime(value.timetuple())
+            return int(time.mktime(value.timetuple()))
         elif isinstance(value, (int, float)):
             return value
         else:
