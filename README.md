@@ -31,6 +31,9 @@
         'ENGINE': 'sphinxsearch.backend.sphinx',
         'HOST': '127.0.0.1',
         'PORT': 9306,
+        'OPTIONS': {
+            'use_unicode': False # if non-ascii letters looks bad in results
+        }
     }
 
     DATABASE_ROUTERS = ['sphinxsearch.routers.SphinxRouter']

@@ -218,7 +218,10 @@ SQLCompiler = SphinxQLCompiler
 
 
 class SQLInsertCompiler(compiler.SQLInsertCompiler, SphinxQLCompiler):
-    pass
+
+    def as_sql(self):
+        sql = super().as_sql()
+        return sql
 
 
 class SQLDeleteCompiler(compiler.SQLDeleteCompiler, SphinxQLCompiler):
