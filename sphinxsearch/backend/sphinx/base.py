@@ -1,5 +1,6 @@
-# coding: utf-8
+from collections import OrderedDict
 
+from django.db import ProgrammingError
 from django.db.backends.mysql import base, creation
 from django.db.backends.mysql.base import server_version_re
 from django.utils.functional import cached_property
@@ -19,6 +20,14 @@ class SphinxOperations(base.DatabaseOperations):
     def force_no_ordering(self):
         """ Fix unsupported syntax "ORDER BY NULL"."""
         return []
+
+    def quote_name(self, name):
+        """ Table names are prefixed with database name."""
+        if getattr(name, 'is_table_name', False):
+            db_name = self.connection.settings_dict.get('NAME', '')
+            if db_name:
+                name = '%s___%s' % (db_name, name)
+        return super().quote_name(name)
 
 
 class SphinxValidation(base.DatabaseValidation):
@@ -51,7 +60,62 @@ class SphinxCreation(creation.DatabaseCreation):
 
     def clone_test_db(self, suffix, verbosity=1, autoclobber=False,
                       keepdb=False):
-        return super().clone_test_db()
+        """
+        Sphinxsearch does not support databases, so just copying all tables
+        with source prefix to dest prefixes new ones."""
+        source_database_name = self.connection.settings_dict['NAME']
+        src_prefix = f'{source_database_name}___'
+        with self._nodb_connection.cursor() as cursor:
+            cursor.execute("SHOW TABLES")
+            for table_name, index_type in cursor.fetchall():
+                if not table_name.startswith(src_prefix):
+                    continue
+                self._clone_table(table_name, suffix)
+
+    def _clone_table(self, table_name, suffix):
+        src_db_name = self.connection.settings_dict['NAME']
+        attr_types = {
+            'uint': 'integer',
+            'timestamp': 'integer',
+            'mva': 'multi',
+            'mva64': 'multi64',
+        }
+        with self._nodb_connection.cursor() as cursor:
+            cursor.execute(f"DESCRIBE {table_name}")
+            _, table_name = table_name.split('___', 1)
+            sql = ["CREATE TABLE",
+                   "%s_%s___%s" % (src_db_name, suffix, table_name),
+                   '(']
+            columns = OrderedDict()
+            for name, attr_type, properties, key in cursor.fetchall():
+                if name == 'id':
+                    continue
+                attr_type = attr_types.get(attr_type, attr_type)
+                properties = set(properties.split(','))
+                if name not in columns:
+                    columns[name] = [attr_type, properties]
+                else:
+                    types = {columns[name][0], attr_type}
+                    if types != {'field', 'string'}:
+                        raise RuntimeError("Dont know how to deal with it")
+                    columns[name][0] = 'field'
+                    columns[name][1].update({'indexed', 'stored'})
+
+            column_defs = []
+            for name, (attr_type, properties) in columns.items():
+                column_defs.append(
+                    f'{name} {attr_type} {" ".join(properties)}')
+
+            sql.append(',\n'.join(column_defs))
+            sql.append(')')
+            try:
+                cursor.execute(' '.join(sql))
+            except ProgrammingError as e:
+                if e.args[-1].endswith('already exists'):
+                    cursor.execute(
+                        "DROP TABLE  %s_%s___%s" % (
+                            src_db_name, suffix, table_name))
+                    cursor.execute(' '.join(sql))
 
 
 class SphinxFeatures(base.DatabaseFeatures):

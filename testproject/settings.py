@@ -82,6 +82,13 @@ DATABASES = {
         'ENGINE': 'sphinxsearch.backend.sphinx',
         'HOST': '127.0.0.1',
         'PORT': 9307,
+        'NAME': 'sphinx',
+    },
+    "cloned": {
+        'ENGINE': 'sphinxsearch.backend.sphinx',
+        'HOST': '127.0.0.1',
+        'PORT': 9307,
+        'NAME': 'sphinx_x',
     }
 }
 

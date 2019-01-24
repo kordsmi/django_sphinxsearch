@@ -7,3 +7,4 @@ services:
             - "9307:9307"
         volumes:
             - "./test_config/:/opt/sphinx/conf/"
+            - "/tmp/:/sphinxdata/indexes/"
