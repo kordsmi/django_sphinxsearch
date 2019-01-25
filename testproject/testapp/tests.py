@@ -591,6 +591,16 @@ class EscapingTestCase(SphinxModelTestCaseBase):
             self.fail("Escaping text %s with %s failed: %s" %
                       (text, escaped, e.args[1]))
 
+    def testConnectionEncoding(self):
+        self.obj.sphinx_field = 'слава кпсс'
+        self.obj.attr_string = 'за вдв'
+        self.obj.save()
+
+        result = self.query(self.obj.sphinx_field)
+        self.assertEqual(len(result), 1)
+        obj = result[0]
+        self.assertEqual(self.obj.attr_string, obj.attr_string)
+
     def testSphinxCharactersEscaping(self):
         """
         Any sphinxql operator should not match document if escaped properly.
@@ -636,6 +646,9 @@ class EscapingTestCase(SphinxModelTestCaseBase):
 
 class DatabaseOperationsTestCase(SphinxModelTestCaseBase):
     def test_clone_db(self):
+        if self.cloned_index:  # pragma: no cover
+            # cloned index is the same test itself
+            return
         c = connections[settings.SPHINX_DATABASE_NAME]
         c.creation.clone_test_db(suffix='x')
 

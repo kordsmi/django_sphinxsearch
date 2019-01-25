@@ -1,6 +1,3 @@
-# coding: utf-8
-
-# $Id: $
 import datetime
 import time
 
@@ -60,6 +57,8 @@ class SphinxMultiField(models.IntegerField):
     def from_db_value(self, value, expression, connection, context):
         if value is None:
             return value
+        if isinstance(value, bytes):
+            value = value.decode('utf-8')
         if value == '':
             return []
         try:
