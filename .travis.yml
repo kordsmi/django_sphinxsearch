@@ -20,6 +20,7 @@ install:
 
 # command to run tests
 script:
+    - mkdir sphinxdata/indexes -p
     - sphinx-3.1.1/bin/searchd -c `pwd`/test_config/sphinx.conf
     - python -m coverage run ./manage.py test -v3
 

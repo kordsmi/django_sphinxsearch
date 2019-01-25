@@ -1,2 +1,4 @@
 mysqlclient==1.4.1
 jsonfield==2.0.2
+tblib
+

@@ -1,17 +1,20 @@
-# coding: utf-8
-
-# $Id: $
-from collections import OrderedDict
 import functools
+from collections import OrderedDict
+
 from django.db import models
 from django.db.models import Count, BooleanField
 from django.db.models.base import ModelBase
-from django.db.models.expressions import Col, Func, BaseExpression
+from django.db.models.expressions import Col, BaseExpression
 from django.db.models.sql import Query
 from django.db.models.sql.where import WhereNode, ExtraWhere
 from django.utils.datastructures import OrderedSet
 
 
+class SphinxTableName(str):
+    is_table_name = True
+
+
+# noinspection PyAbstractClass
 class SphinxCount(Count):
     """ Replaces Mysql-like COUNT('*') with COUNT(*) token."""
     template = '%(function)s(*)'
@@ -160,7 +163,9 @@ class SphinxModelBase(ModelBase):
                 local_fields.insert(0, local_fields.pop(pk_idx))
         except ValueError:
             pass
-
+        
+        # mark db_table to be processed with quote_name
+        new_class._meta.db_table = SphinxTableName(new_class._meta.db_table)
         return new_class
 
     def add_to_class(cls, name, value):
