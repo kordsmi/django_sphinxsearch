@@ -84,10 +84,10 @@ class SphinxCreation(creation.DatabaseCreation):
             'mva': 'multi',
             'mva64': 'multi64',
         }
-        new_table_name = f'{src_db_name}_{suffix}___{table_name}'
+        _, main_table_name = table_name.split('___', 1)
+        new_table_name = f'{src_db_name}_{suffix}___{main_table_name}'
         with self._nodb_connection.cursor() as cursor:
             cursor.execute(f"DESCRIBE {table_name}")
-            _, table_name = table_name.split('___', 1)
             sql = [f"CREATE TABLE {new_table_name} ("]
             columns = OrderedDict()
             for name, attr_type, properties, key in cursor.fetchall():
