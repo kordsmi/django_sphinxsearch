@@ -84,11 +84,11 @@ class SphinxCreation(creation.DatabaseCreation):
             'mva': 'multi',
             'mva64': 'multi64',
         }
-        table_name = f'{src_db_name}_{suffix}___{table_name}'
+        new_table_name = f'{src_db_name}_{suffix}___{table_name}'
         with self._nodb_connection.cursor() as cursor:
             cursor.execute(f"DESCRIBE {table_name}")
             _, table_name = table_name.split('___', 1)
-            sql = [f"CREATE TABLE {table_name} ("]
+            sql = [f"CREATE TABLE {new_table_name} ("]
             columns = OrderedDict()
             for name, attr_type, properties, key in cursor.fetchall():
                 if name == 'id':
@@ -119,7 +119,7 @@ class SphinxCreation(creation.DatabaseCreation):
                         return
                     # noinspection SqlResolve
                     cursor.execute(
-                        f"DROP TABLE ")
+                        f"DROP TABLE {new_table_name}")
                     cursor.execute(' '.join(sql))
                 else:  # pragma: no cover
                     raise
