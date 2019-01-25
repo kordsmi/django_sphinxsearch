@@ -142,6 +142,10 @@ string attributes were not comparable till v2.2.7.
 * Without limits sphinxsearch returns only 20 matched documents.
 * uint attributes accept -1 but return it as unsigned 32bit integer.
 * bigint accept 2**63 + 1 but return it as signed 64bit integer.
-* use SphinxIntegerField and SphinxBigIntegerField instead of IntegerField and
+* Use SphinxIntegerField and SphinxBigIntegerField instead of IntegerField and
 BigIntegerField from django.db.models, because IN is an expression in
 SQL (`value IN column`), but a function (`IN(value, column)`) in sphinxsearch.
+* Since 3.0.1 multi64 field incorrectly parses values greater than 2**31 and is
+completely unusable for bigint values.
+* In 3.1.1 you can create rt index with same string field and attr from config
+but you cant clone this index, so you attr-based filtering does not work.
