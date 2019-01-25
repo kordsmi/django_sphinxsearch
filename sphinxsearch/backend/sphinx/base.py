@@ -123,6 +123,8 @@ class SphinxCreation(creation.DatabaseCreation):
                         "DROP TABLE  %s_%s___%s" % (
                             src_db_name, suffix, table_name))
                     cursor.execute(' '.join(sql))
+                else:  # pragma: no cover
+                    raise
 
 
 class SphinxFeatures(base.DatabaseFeatures):
