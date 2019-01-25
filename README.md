@@ -63,13 +63,11 @@
 4. Define Django model for index
 
     ```python
-    import six
     from datetime import datetime
     from django.db import models
 
     from jsonfield.fields import JSONField
 
-    from sphinxsearch import sql
     from sphinxsearch import models as spx_models
 
 
