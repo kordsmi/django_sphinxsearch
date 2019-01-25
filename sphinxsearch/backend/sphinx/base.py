@@ -1,13 +1,12 @@
+import sys
 from collections import OrderedDict
 
+# noinspection PyPackageRequirements
+from MySQLdb import converters, constants
 from django.db import ProgrammingError
 from django.db.backends.mysql import base, creation
 from django.db.backends.mysql.base import server_version_re
 from django.utils.functional import cached_property
-
-# noinspection PyPackageRequirements
-from MySQLdb import converters, constants
-
 
 conversions = converters.conversions.copy()
 conversions[constants.FIELD_TYPE.STRING] = lambda x: x
@@ -19,10 +18,6 @@ class SphinxOperations(base.DatabaseOperations):
         raise NotImplementedError()
 
     compiler_module = "sphinxsearch.backend.sphinx.compiler"
-
-    def fulltext_search_sql(self, field_name):
-        """ Formats full-text search expression."""
-        return 'MATCH (\'@%s "%%s"\')' % field_name
 
     def force_no_ordering(self):
         """ Fix unsupported syntax "ORDER BY NULL"."""
@@ -70,16 +65,18 @@ class SphinxCreation(creation.DatabaseCreation):
         """
         Sphinxsearch does not support databases, so just copying all tables
         with source prefix to dest prefixes new ones."""
-        source_database_name = self.connection.settings_dict['NAME']
-        src_prefix = f'{source_database_name}___'
+        src_db_name = self.connection.settings_dict['NAME']
+        src_prefix = f'{src_db_name}___'
+        sys.stdout.write(
+            f"Cloning sphinxsearch tables for alias {src_db_name}...\n")
         with self._nodb_connection.cursor() as cursor:
             cursor.execute("SHOW TABLES")
             for table_name, index_type in cursor.fetchall():
                 if not table_name.startswith(src_prefix):
                     continue
-                self._clone_table(table_name, suffix)
+                self._clone_table(table_name, suffix, keepdb=keepdb)
 
-    def _clone_table(self, table_name, suffix):
+    def _clone_table(self, table_name, suffix, keepdb=False):
         src_db_name = self.connection.settings_dict['NAME']
         attr_types = {
             'uint': 'integer',
@@ -87,12 +84,11 @@ class SphinxCreation(creation.DatabaseCreation):
             'mva': 'multi',
             'mva64': 'multi64',
         }
+        table_name = f'{src_db_name}_{suffix}___{table_name}'
         with self._nodb_connection.cursor() as cursor:
             cursor.execute(f"DESCRIBE {table_name}")
             _, table_name = table_name.split('___', 1)
-            sql = ["CREATE TABLE",
-                   "%s_%s___%s" % (src_db_name, suffix, table_name),
-                   '(']
+            sql = [f"CREATE TABLE {table_name} ("]
             columns = OrderedDict()
             for name, attr_type, properties, key in cursor.fetchall():
                 if name == 'id':
@@ -119,9 +115,11 @@ class SphinxCreation(creation.DatabaseCreation):
                 cursor.execute(' '.join(sql))
             except ProgrammingError as e:
                 if e.args[-1].endswith('already exists'):
+                    if keepdb:
+                        return
+                    # noinspection SqlResolve
                     cursor.execute(
-                        "DROP TABLE  %s_%s___%s" % (
-                            src_db_name, suffix, table_name))
+                        f"DROP TABLE ")
                     cursor.execute(' '.join(sql))
                 else:  # pragma: no cover
                     raise
