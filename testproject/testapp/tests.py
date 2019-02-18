@@ -1,6 +1,6 @@
 import re
 import sys
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytz
 from django.conf import settings
@@ -9,7 +9,6 @@ from django.db.models import Sum, Q
 from django.db.utils import ProgrammingError
 from django.test import TransactionTestCase, utils
 from django.utils import timezone
-
 
 from sphinxsearch.routers import SphinxRouter
 from sphinxsearch.utils import sphinx_escape
@@ -43,7 +42,7 @@ class SphinxModelTestCaseBase(TransactionTestCase):
         self.multi64_is_broken = c.mysql_version >= (3, 0, 0)
         self.cloned_index = c.settings_dict['NAME'] != 'sphinx'
         self.truncate_model()
-        self.now = datetime.now().replace(microsecond=0)
+        self.now = pytz.UTC.normalize(timezone.now().replace(microsecond=0))
         self.defaults = self.get_model_defaults()
         self.spx_queries = utils.CaptureQueriesContext(
             connections[settings.SPHINX_DATABASE_NAME])

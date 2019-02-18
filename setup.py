@@ -75,5 +75,6 @@ setup(
     setup_requires=[
         'Django>=2.0,<2.2',
         'mysqlclient>=1.4.2,<1.5.0'
+        'pytz'
     ],
 )
