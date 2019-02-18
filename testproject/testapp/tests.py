@@ -1,12 +1,14 @@
 import re
 import sys
-from datetime import datetime, timedelta
+from datetime import timedelta
 
+import pytz
 from django.conf import settings
 from django.db import connections
 from django.db.models import Sum, Q
 from django.db.utils import ProgrammingError
 from django.test import TransactionTestCase, utils
+from django.utils import timezone
 
 from sphinxsearch.routers import SphinxRouter
 from sphinxsearch.utils import sphinx_escape
@@ -40,7 +42,7 @@ class SphinxModelTestCaseBase(TransactionTestCase):
         self.multi64_is_broken = c.mysql_version >= (3, 0, 0)
         self.cloned_index = c.settings_dict['NAME'] != 'sphinx'
         self.truncate_model()
-        self.now = datetime.now().replace(microsecond=0)
+        self.now = pytz.UTC.normalize(timezone.now().replace(microsecond=0))
         self.defaults = self.get_model_defaults()
         self.spx_queries = utils.CaptureQueriesContext(
             connections[settings.SPHINX_DATABASE_NAME])
@@ -571,6 +573,33 @@ class TestSphinxRouter(SphinxModelTestCaseBase):
 
         self.assertFalse(self.router.is_sphinx_model(
             models.DefaultDjangoModel()))
+
+
+class SphinxFieldsTestCase(SphinxModelTestCaseBase):
+    """ Checks custom sphinx fields behavior."""
+
+    def testTimestampFieldTimeZone(self):
+        """
+        SphinxDateTimeField converts and stores datetime in UTC timestamp.
+        """
+        tz = pytz.timezone("Europe/Moscow")
+        now = timezone.now().replace(microsecond=0, tzinfo=tz)
+        self.obj.attr_timestamp = now
+
+        self.obj.save()
+        self.obj.refresh_from_db(fields=('attr_timestamp',))
+
+        self.assertEqual(self.obj.attr_timestamp, now)
+        self.assertEqual(self.obj.attr_timestamp.tzinfo, pytz.UTC)
+        dt = tz.normalize(self.obj.attr_timestamp)
+        self.assertEqual(dt, now)
+
+        self.obj.attr_timestamp = now.replace(tzinfo=pytz.UTC)
+
+        self.obj.save()
+        self.obj.refresh_from_db(fields=('attr_timestamp',))
+
+        self.assertEqual(self.obj.attr_timestamp, now.replace(tzinfo=pytz.UTC))
 
 
 class EscapingTestCase(SphinxModelTestCaseBase):

@@ -1,6 +1,8 @@
 import datetime
 import time
 
+import pytz
+
 from sphinxsearch.lookups import sphinx_lookups
 from django.core import exceptions
 from django.db import models
@@ -23,6 +25,8 @@ class SphinxDateTimeField(models.FloatField):
 
     def get_prep_value(self, value):
         if isinstance(value, (datetime.datetime, datetime.date)):
+            if value.tzinfo is not None:
+                value = pytz.UTC.normalize(value)
             return int(time.mktime(value.timetuple()))
         elif isinstance(value, (int, float)):
             return value
@@ -31,7 +35,7 @@ class SphinxDateTimeField(models.FloatField):
 
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
     def from_db_value(self, value, expression, connection, context):
-        return datetime.datetime.fromtimestamp(value)
+        return datetime.datetime.fromtimestamp(value).replace(tzinfo=pytz.UTC)
 
 
 class SphinxIntegerField(models.IntegerField):
