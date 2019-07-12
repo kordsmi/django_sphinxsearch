@@ -1,7 +1,7 @@
 # coding: utf-8
 import re
 
-from django.core.exceptions import FieldError
+from django.core.exceptions import FieldError, EmptyResultSet
 from django.db import models
 from django.db.models.expressions import Random
 from django.db.models.lookups import Exact
@@ -98,29 +98,19 @@ class SphinxQLCompiler(compiler.SQLCompiler):
 
     def as_sql(self, with_limits=True, with_col_aliases=False, subquery=False):
         """ Patching final SQL query."""
-        where, self.query.where = self.query.where, sqls.SphinxWhereNode()
-        match = getattr(self.query, 'match', None)
-        if match:
-            # add match extra where
-            self._add_match_extra(match)
-
-        connection = self.connection
-
-        where_sql, where_params = where.as_sql(self, connection)
+        query = self.query
+        # replacing WHERE node with sphinx-aware node implementation
+        where, query.where = query.where, sqls.SphinxWhereNode()
+        # Adding MATCH() node to WHERE node if needed
+        self._add_match_extra(query)
         # moving where conditions to SELECT clause because of better support
         # of SQL expressions in sphinxsearch.
-
-        if where_sql:
-            # Without annotation queryset.count() receives 1 as where_result
-            # and count it as aggregation result.
-            self.query.add_annotation(
-                sqls.SphinxWhereExpression(where_sql, where_params),
-                '__where_result')
-            # almost all where conditions are now in SELECT clause, so
-            # WHERE should contain only test against that conditions are true
-            self.query.add_extra(
-                None, None,
-                ['__where_result = %s'], (True,), None, None)
+        try:
+            self._add_where_result(query, where)
+        except EmptyResultSet:
+            # Where node compiled to always-false condition, but we still need
+            # to call pre_sql_setup() and other methods by super().as_sql
+            pass
 
         sql, args = super().as_sql(with_limits, with_col_aliases)
 
@@ -133,7 +123,7 @@ class SphinxQLCompiler(compiler.SQLCompiler):
         sql = re.sub(r'LIMIT (\d+) OFFSET (\d+)$', 'LIMIT \\2, \\1', sql)
 
         # patching GROUP BY clause
-        group_limit = getattr(self.query, 'group_limit', '')
+        group_limit = getattr(query, 'group_limit', '')
         group_by_ordering = self.get_group_ordering()
         if group_limit:
             # add GROUP <N> BY expression
@@ -146,7 +136,7 @@ class SphinxQLCompiler(compiler.SQLCompiler):
         sql = re.sub(r'GROUP BY ((\w+)(, \w+)*)', group_by, sql)
 
         # adding sphinxsearch OPTION clause
-        options = getattr(self.query, 'options', None)
+        options = getattr(query, 'options', None)
         if options:
             keys = sorted(options.keys())
             values = [options[k] for k in keys if k not in self.safe_options]
@@ -160,6 +150,20 @@ class SphinxQLCompiler(compiler.SQLCompiler):
             sql += ' OPTION %s' % ', '.join(opts) or ''
             args += tuple(values)
         return sql, args
+
+    def _add_where_result(self, query, where):
+        where_sql, where_params = where.as_sql(self, self.connection)
+        if where_sql:
+            # Without annotation queryset.count() receives 1 as where_result
+            # and count it as aggregation result.
+            query.add_annotation(
+                sqls.SphinxWhereExpression(where_sql, where_params),
+                '__where_result')
+            # almost all where conditions are now in SELECT clause, so
+            # WHERE should contain only test against that conditions are true
+            query.add_extra(
+                None, None,
+                ['__where_result = %s'], (True,), None, None)
 
     def get_group_ordering(self):
         """ Returns group ordering clause.
@@ -177,8 +181,13 @@ class SphinxQLCompiler(compiler.SQLCompiler):
             result.append("%s %s" % (col, order))
         return " WITHIN GROUP ORDER BY " + ", ".join(result)
 
-    def _add_match_extra(self, match):
+    def _add_match_extra(self, query):
         """ adds MATCH clause to query.where """
+        # Adding match node if needed
+        match = getattr(query, 'match', None)
+        if match is None:
+            return
+        # add match extra where
         expression = []
         all_field_expr = []
         all_fields_lookup = match.get('*')
@@ -199,7 +208,7 @@ class SphinxQLCompiler(compiler.SQLCompiler):
             if sphinx_attr == '*':
                 continue
             # noinspection PyProtectedMember
-            field = self.query.model._meta.get_field(sphinx_attr)
+            field = query.model._meta.get_field(sphinx_attr)
             db_column = field.db_column or field.attname
             expression.append('@' + db_column)
             expression.append("(%s)" % self._serialize(lookup))
@@ -210,7 +219,7 @@ class SphinxQLCompiler(compiler.SQLCompiler):
         match_expr = u"MATCH('%s')" % u' '.join(map(decode, expression))
 
         # add MATCH() to query.where
-        self.query.where.add(sqls.SphinxExtraWhere([match_expr], []), AND)
+        query.where.add(sqls.SphinxExtraWhere([match_expr], []), AND)
 
 
 # Set SQLCompiler appropriately, so queries will use the correct compiler.
