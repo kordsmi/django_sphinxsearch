@@ -1,8 +1,8 @@
-import re
 import sys
 from datetime import timedelta
 
 import pytz
+import re
 from django.conf import settings
 from django.db import connections
 from django.db.models import Sum, Q
@@ -116,6 +116,11 @@ class SphinxModelTestCase(SphinxModelTestCaseBase):
         qs = list(self.model.objects.extra(select={'const': 0},
                                            where=['const=0']))
         self.assertEqual(len(qs), 1)
+
+    def testLenOfEmptySet(self):
+        qs = self.model.objects.match("nonexistent")
+        self.assertEqual(qs.count(), 0)
+        self.assertEqual(len(qs[:0]), 0)
 
     def testGroupByExtraSelect(self):
         qs = self.model.objects.all()
