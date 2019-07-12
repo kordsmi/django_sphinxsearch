@@ -679,6 +679,8 @@ class EscapingTestCase(SphinxModelTestCaseBase):
 
 
 class DatabaseOperationsTestCase(SphinxModelTestCaseBase):
+    databases = ['default', 'cloned']
+
     def test_clone_db(self):
         if self.cloned_index:  # pragma: no cover
             # cloned index is the same test itself
