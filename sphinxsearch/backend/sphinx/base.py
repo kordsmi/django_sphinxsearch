@@ -156,9 +156,6 @@ class DatabaseWrapper(base.DatabaseWrapper):
         self.features = SphinxFeatures(self)
         self.validation = SphinxValidation(self)
 
-    def _start_transaction_under_autocommit(self):
-        raise NotImplementedError()
-
     @cached_property
     def mysql_version(self):
         # Django>=1.10 makes if differently

@@ -47,47 +47,7 @@ class SphinxExtraWhere(ExtraWhere):
 
 
 class SphinxWhereNode(WhereNode):
-
-    def make_atom(self, child, qn, connection):
-        """
-        Transform search, the keyword should not be quoted.
-        """
-        return super().make_atom(child, qn, connection)
-        lvalue, lookup_type, value_annot, params_or_value = child
-        sql, params = super().make_atom(child, qn, connection)
-        if lookup_type == 'search':
-            if hasattr(lvalue, 'process'):
-                try:
-                    lvalue, params = lvalue.process(lookup_type, params_or_value, connection)
-                except EmptyShortCircuit:
-                    raise EmptyResultSet
-            if isinstance(lvalue, tuple):
-                # A direct database column lookup.
-                field_sql = self.sql_for_columns(lvalue, qn, connection)
-            else:
-                # A smart object with an as_sql() method.
-                field_sql = lvalue.as_sql(qn, connection)
-            # TODO: There are a couple problems here.
-            # 1. The user _might_ want to search only a specific field.
-            # 2. However, since Django requires a field name to use the __search operator
-            #    There is no way to do a search in _all_ fields.
-            # 3. Because, using multiple __search operators is not supported.
-            # So, we need to merge multiped __search operators into a single MATCH(), we
-            # can't do that here, we have to do that one level up...
-            # Ignore the field name, search all fields:
-            params = ('@* %s' % params[0], )
-            # _OR_ respect the field name, and search on it:
-            #params = ('@%s %s' % (field_sql, params[0]), )
-        if self._real_negated:
-            col = lvalue.col
-            if lookup_type == 'exact':
-                sql = '%s <> %%s' % col
-            elif lookup_type == 'in':
-                params_placeholder = '(%s)' % (', '.join(['%s'] * len(params)))
-                sql = '%s NOT IN %s' % (col, params_placeholder)
-            else:
-                raise ValueError("Negative '%s' lookup not supported" % lookup_type)
-        return sql, params
+    pass
 
 
 class SphinxQuery(Query):
@@ -108,6 +68,7 @@ class SphinxQuery(Query):
 
     def add_match(self, *args, **kwargs):
         if not hasattr(self, 'match'):
+            # noinspection PyAttributeOutsideInit
             self.match = OrderedDict()
         for expression in args:
             self.match.setdefault('*', OrderedSet())
@@ -134,6 +95,7 @@ class SphinxQuery(Query):
         return number
 
 
+# noinspection PyAbstractClass
 class SphinxCol(Col):
     def as_sql(self, compiler, connection):
         # As column names in SphinxQL couldn't be escaped with `backticks`,
@@ -143,18 +105,19 @@ class SphinxCol(Col):
 
 class SphinxModelBase(ModelBase):
 
-    def __new__(cls, name, bases, attrs, **kwargs):
+    # noinspection PyProtectedMember
+    def __new__(mcs, name, bases, attrs, **kwargs):
         # Each field must be monkey-patched with SphinxCol class to prevent
         # `tablename`.`attr` appearing in SQL
         for attr in attrs.values():
             if isinstance(attr, models.Field):
                 col_patched = getattr(attr, '_col_patched', False)
                 if not col_patched:
-                    cls.patch_col_class(attr)
+                    mcs.patch_col_class(attr)
 
-        new_class = super().__new__(cls, name, bases, attrs, **kwargs)
+        new_class = super().__new__(mcs, name, bases, attrs, **kwargs)
 
-        # if have overriden primary key, it should be the first local field,
+        # if have overridden primary key, it should be the first local field,
         # because of JSONField feature at jsonfield.subclassing.Creator.__set__
         local_fields = new_class._meta.local_fields
         try:
@@ -175,7 +138,7 @@ class SphinxModelBase(ModelBase):
         super().add_to_class(name, value)
 
     @classmethod
-    def patch_col_class(cls, field):
+    def patch_col_class(mcs, field):
         @functools.wraps(field.get_col)
         def wrapper(alias, output_field=None):
             col = models.Field.get_col(field, alias, output_field=output_field)

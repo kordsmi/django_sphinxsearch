@@ -7,6 +7,7 @@ env:
   matrix:
     - DJANGO=2.0
     - DJANGO=2.1
+    - DJANGO=2.2
 
 before_install:
   - curl http://sphinxsearch.com/files/sphinx-3.1.1-612d99f-linux-amd64-glibc2.12.tar.gz > sphinx-3.1.1.tar.gz
@@ -14,7 +15,7 @@ before_install:
 
 
 install:
-  - pip install Django==$DJANGO
+  - pip install Django~=$DJANGO
   - pip install -r test-requires.txt
   - pip install codecov
 
