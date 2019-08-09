@@ -9,7 +9,7 @@ from django.db.backends.mysql.base import server_version_re
 from django.utils.functional import cached_property
 
 conversions = converters.conversions.copy()
-conversions[constants.FIELD_TYPE.STRING] = lambda x: x
+conversions[constants.FIELD_TYPE.STRING] = lambda x: x.decode('utf-8')
 
 
 class SphinxOperations(base.DatabaseOperations):
@@ -144,7 +144,6 @@ class SphinxFeatures(base.DatabaseFeatures):
 
 class DatabaseWrapper(base.DatabaseWrapper):
     def __init__(self, *args, **kwargs):
-        # Fixing string conversions in mysqlclient
         conn_opts = args[0]
         conn_opts = conn_opts.copy()
         options = conn_opts.setdefault('OPTIONS', {})
