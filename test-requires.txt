@@ -1,4 +1,4 @@
-mysqlclient==1.4.3
+mysqlclient==1.4.4
 jsonfield==2.0.2
 tblib==1.4.0
 pytz==2019.2
