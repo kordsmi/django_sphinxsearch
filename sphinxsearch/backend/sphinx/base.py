@@ -1,15 +1,10 @@
 import sys
 from collections import OrderedDict
 
-# noinspection PyPackageRequirements
-from MySQLdb import converters, constants
 from django.db import ProgrammingError
 from django.db.backends.mysql import base, creation
 from django.db.backends.mysql.base import server_version_re
 from django.utils.functional import cached_property
-
-conversions = converters.conversions.copy()
-conversions[constants.FIELD_TYPE.STRING] = lambda x: x.decode('utf-8')
 
 
 class SphinxOperations(base.DatabaseOperations):
@@ -144,12 +139,7 @@ class SphinxFeatures(base.DatabaseFeatures):
 
 class DatabaseWrapper(base.DatabaseWrapper):
     def __init__(self, *args, **kwargs):
-        conn_opts = args[0]
-        conn_opts = conn_opts.copy()
-        options = conn_opts.setdefault('OPTIONS', {})
-        options.setdefault('use_unicode', False)
-        options.setdefault('conv', conversions)
-        super().__init__(conn_opts, *args[1:], **kwargs)
+        super().__init__(*args, **kwargs)
         self.ops = SphinxOperations(self)
         self.creation = SphinxCreation(self)
         self.features = SphinxFeatures(self)
