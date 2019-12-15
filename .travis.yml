@@ -10,6 +10,7 @@ env:
     - DJANGO=2.0
     - DJANGO=2.1
     - DJANGO=2.2
+    - DJANGO=3.0
 
 before_install:
   - curl http://sphinxsearch.com/files/sphinx-3.1.1-612d99f-linux-amd64-glibc2.12.tar.gz > sphinx-3.1.1.tar.gz
