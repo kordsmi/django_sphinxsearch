@@ -64,7 +64,7 @@ class OverridenSphinxModel(models.Model, metaclass=sql.SphinxModelBase):
 class ForcedPKModel(FieldMixin, spx_models.SphinxModel):
 
     class Meta:
-        db_table = 'testapp_testmodel'
+        db_table = 'testapp_testmodel_forced'
         app_label = 'testapp'
 
     id = models.BigIntegerField(primary_key=True)
