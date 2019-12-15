@@ -1,4 +1,4 @@
 mysqlclient==1.4.6
-tblib==1.4.0
+tblib==1.6.0
 pytz==2019.3
-Django==2.2.7
+Django==2.2.8
