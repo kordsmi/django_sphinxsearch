@@ -107,6 +107,7 @@ class SphinxModelBase(ModelBase):
 
     # noinspection PyProtectedMember
     def __new__(mcs, name, bases, attrs, **kwargs):
+        manual_pk = None
         # Each field must be monkey-patched with SphinxCol class to prevent
         # `tablename`.`attr` appearing in SQL
         for attr in attrs.values():
@@ -114,6 +115,12 @@ class SphinxModelBase(ModelBase):
                 col_patched = getattr(attr, '_col_patched', False)
                 if not col_patched:
                     mcs.patch_col_class(attr)
+                if attr.primary_key:
+                    manual_pk = attr
+        # Force non-autoincrement primary key
+        if manual_pk is None:
+            attrs['id'] = models.IntegerField(primary_key=True,
+                                              verbose_name='ID')
 
         new_class = super().__new__(mcs, name, bases, attrs, **kwargs)
 
@@ -126,7 +133,7 @@ class SphinxModelBase(ModelBase):
                 local_fields.insert(0, local_fields.pop(pk_idx))
         except ValueError:
             pass
-        
+
         # mark db_table to be processed with quote_name
         new_class._meta.db_table = SphinxTableName(new_class._meta.db_table)
         return new_class
