@@ -35,7 +35,7 @@ class SphinxDateTimeField(models.FloatField):
             raise ValueError("Invalid value for UNIX_TIMESTAMP")
 
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, expression, connection):
         return datetime.datetime.fromtimestamp(value).replace(tzinfo=pytz.UTC)
 
 
@@ -59,7 +59,7 @@ class SphinxMultiField(models.IntegerField):
         return [get_prep_value(v) for v in value]
 
     # noinspection PyUnusedLocal
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, expression, connection):
         if value is None:
             return value
         if isinstance(value, bytes):
