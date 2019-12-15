@@ -1,4 +1,5 @@
 import datetime
+import json
 import time
 
 import pytz
@@ -89,3 +90,17 @@ class SphinxMultiField(models.IntegerField):
 
 class SphinxMulti64Field(SphinxMultiField):
     pass
+
+
+class SphinxJSONField(models.TextField):
+
+    # noinspection PyUnusedLocal,PyMethodMayBeStatic
+    def from_db_value(self, value, expression, connection):
+        if not isinstance(value, str) or value is None:
+            return value
+        return json.loads(value)
+
+    def to_python(self, value):
+        if value is None:
+            return value
+        return json.dumps(value)
