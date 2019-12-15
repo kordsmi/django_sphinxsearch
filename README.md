@@ -7,7 +7,8 @@
 [![PyPI version](https://badge.fury.io/py/django_sphinxsearch.svg)](http://badge.fury.io/py/django_sphinxsearch)
 
 * Not a [django_sphinx_db](https://github.com/smartfile/django-sphinx-db) fork
-* `Django>=2.0,<2.3` supported
+* `Django>=2.0,<3.1` supported
+* Tested against Django-2.2 (LTS) and Django-3.0
 
 ## Installation and usage
 
@@ -66,8 +67,6 @@
     from datetime import datetime
     from django.db import models
 
-    from jsonfield.fields import JSONField
-
     from sphinxsearch import models as spx_models
 
 
@@ -93,7 +92,7 @@
 
         # String attributes
         attr_string = models.CharField(max_length=32, default='')
-        attr_json = JSONField(default={})
+        attr_json = spx_models.JSONField(default={})
 
         # Multi-value fields (sets of integer values)
         attr_multi = spx_models.SphinxMultiField(default=[])
