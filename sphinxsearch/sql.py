@@ -124,16 +124,6 @@ class SphinxModelBase(ModelBase):
 
         new_class = super().__new__(mcs, name, bases, attrs, **kwargs)
 
-        # if have overridden primary key, it should be the first local field,
-        # because of JSONField feature at jsonfield.subclassing.Creator.__set__
-        local_fields = new_class._meta.local_fields
-        try:
-            pk_idx = local_fields.index(new_class._meta.pk)
-            if pk_idx > 0:
-                local_fields.insert(0, local_fields.pop(pk_idx))
-        except ValueError:
-            pass
-
         # mark db_table to be processed with quote_name
         new_class._meta.db_table = SphinxTableName(new_class._meta.db_table)
         return new_class
