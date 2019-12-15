@@ -18,17 +18,6 @@ class SphinxQLCompiler(compiler.SQLCompiler):
     # there.
     safe_options = ('ranker', 'field_weights', 'index_weights')
 
-    def compile(self, node, select_format=False):
-        sql, params = super().compile(node, select_format)
-        # FIXME: Search lookup removed from Django-2.0, is this ok still?
-        # # substitute MATCH() arguments with sphinx-escaped params
-        # if isinstance(node, Search):
-        #     search_text = sphinx_escape(params[0])
-        #     sql = sql % search_text
-        #     params = []
-
-        return sql, params
-
     def get_order_by(self):
         res = super().get_order_by()
 

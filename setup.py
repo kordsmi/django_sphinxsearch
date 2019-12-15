@@ -73,7 +73,7 @@ setup(
     author_email='zimbler@gmail.com',
     description='Sphinxsearch database backend for django>=2.0',
     setup_requires=[
-        'Django>=2.0,<2.3',
+        'Django>=2.0,<3.1',
         'mysqlclient>=1.4.4,<1.5.0',
         'pytz'
     ],
