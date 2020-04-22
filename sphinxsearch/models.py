@@ -228,6 +228,14 @@ class SphinxQuerySet(QuerySet):
             if getattr(self.query, 'with_meta', False):
                 self._fetch_meta()
 
+    def select_for_update(self, nowait=False, skip_locked=False, of=()):
+        """ Sphinx doesn't support select_for_update, so make stub.
+
+        That method is not usefull for search index but is used by many others
+        queryset methods, for example update_or_create.
+        """
+        return self
+
 
 class SphinxManager(models.Manager):
     use_for_related_fields = True

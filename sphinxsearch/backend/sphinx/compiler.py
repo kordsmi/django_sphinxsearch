@@ -96,12 +96,10 @@ class SphinxQLCompiler(compiler.SQLCompiler):
         # of SQL expressions in sphinxsearch.
         try:
             self._add_where_result(query, where)
-        except EmptyResultSet:
+        finally:
             # Where node compiled to always-false condition, but we still need
             # to call pre_sql_setup() and other methods by super().as_sql
-            pass
-
-        sql, args = super().as_sql(with_limits, with_col_aliases)
+            sql, args = super().as_sql(with_limits, with_col_aliases)
 
         # empty SQL doesn't need patching
         if (sql, args) == ('', ()):

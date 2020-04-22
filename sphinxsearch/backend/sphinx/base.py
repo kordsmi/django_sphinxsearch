@@ -132,7 +132,7 @@ class SphinxFeatures(base.DatabaseFeatures):
     # support it.
     supports_transactions = True
     allows_group_by_pk = False
-    uses_savepoints = False
+    uses_savepoints = True
     supports_column_check_constraints = False
     is_sql_auto_is_null_enabled = False
 
@@ -155,3 +155,21 @@ class DatabaseWrapper(base.DatabaseWrapper):
             raise Exception('Unable to determine MySQL version from version '
                             'string %r' % server_info)
         return tuple(int(x) for x in match.groups())
+
+    def _savepoint(self, sid):
+        """ Stub for savepoints.
+
+        Sphinx does not support transactions Django knows, so we have to clean
+        Sphinx database by ourselves between tests. But we don't want tell
+        Django about it, because it will not be using them for another
+        databases as we need. So we tell Django we support transaction and
+        savepoints.
+        When transactions are active Django does rollback to a savepoint after
+        each test. So we need this and two stubs below that Django
+        thinks everything is fine."""
+
+    def _savepoint_rollback(self, sid):
+        pass
+
+    def _savepoint_commit(self, sid):
+        pass
