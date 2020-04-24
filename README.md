@@ -131,6 +131,12 @@
     TestModel.objects.filter(attr_bool=True).update(attr_uint=2)
     ```
 
+## Run tests
+
+```shell
+docker-compose up django
+```
+
 ## Notes for production usage
 
 * Sphinxsearch engine has some issues with SQL-syntax support, and they vary

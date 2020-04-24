@@ -234,6 +234,8 @@ class SphinxQuerySet(QuerySet):
         That method is not usefull for search index but is used by many others
         queryset methods, for example update_or_create.
         """
+        import warnings
+        warnings.warn('Sphinx warning: select_for_update doesn\'t do a lock.')
         return self
 
 

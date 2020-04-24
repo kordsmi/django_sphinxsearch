@@ -4,7 +4,7 @@ from datetime import timedelta
 import pytz
 import re
 from django.conf import settings
-from django.db import connections
+from django.db import connections, transaction
 from django.db.models import Sum, Q
 from django.db.utils import ProgrammingError
 from django.test import utils, TestCase
@@ -710,3 +710,11 @@ class DatabaseOperationsTestCase(SphinxModelTestCaseBase):
 
         obj1 = self.model.objects.using('cloned').get(pk=obj.pk)
         self.assertIsNotNone(obj1)
+
+    def test_transaction_with_savepoint(self):
+        with transaction.atomic(savepoint=True):
+            pass
+
+    def test_transaction_without_savepoint(self):
+        with transaction.atomic(savepoint=False):
+            pass
