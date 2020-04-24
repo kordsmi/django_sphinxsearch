@@ -4,7 +4,7 @@
 
 ![build](https://github.com/tumb1er/django_sphinxsearch/workflows/build/badge.svg?branch=master)
 [![codecov](https://codecov.io/gh/tumb1er/django_sphinxsearch/branch/master/graph/badge.svg)](https://codecov.io/gh/tumb1er/django_sphinxsearch)
-[![PyPI version](https://badge.fury.io/py/django_sphinxsearch.svg)](http://badge.fury.io/py/django_sphinxsearch)
+[![PyPI version](https://badge.fury.io/py/django-sphinxsearch.svg)](https://badge.fury.io/py/django-sphinxsearch)
 
 * Not a [django_sphinx_db](https://github.com/smartfile/django-sphinx-db) fork
 * `Django>=2.0,<3.1` supported
