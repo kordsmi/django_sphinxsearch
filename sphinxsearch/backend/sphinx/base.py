@@ -1,4 +1,5 @@
 import sys
+import warnings
 from collections import OrderedDict
 
 from django.db import ProgrammingError
@@ -167,16 +168,13 @@ class DatabaseWrapper(base.DatabaseWrapper):
         When transactions are active Django does rollback to a savepoint after
         each test. So we need this and two stubs below that Django
         thinks everything is fine."""
-        import warnings
-        warnings.warn('Sphinx warning: Sphinx doesn\'t support savepoints, '
-                      'only emulates them. Savepoint creation is not done.')
+        warnings.warn("Sphinx warning: Sphinx doesn't support savepoints, "
+                      "only emulates them. Savepoint creation is not done.")
 
     def _savepoint_rollback(self, sid):
-        import warnings
-        warnings.warn('Sphinx warning: Sphinx doesn\'t support savepoints, '
-                      'only emulates them. Rollback is not done.')
+        warnings.warn("Sphinx warning: Sphinx doesn't support savepoints, "
+                      "only emulates them. Rollback is not done.")
 
     def _savepoint_commit(self, sid):
-        import warnings
-        warnings.warn('Sphinx warning: Sphinx doesn\'t support savepoints, '
-                      'only emulates them. Commit is not done.')
+        warnings.warn("Sphinx warning: Sphinx doesn't support savepoints, "
+                      "only emulates them. Commit is not done.")

@@ -149,8 +149,8 @@ class SphinxQLCompiler(compiler.SQLCompiler):
         # and count it as aggregation result.
         if where_sql:
             query.add_annotation(
-            sqls.SphinxWhereExpression(where_sql, where_params),
-            '__where_result')
+                sqls.SphinxWhereExpression(where_sql, where_params),
+                '__where_result')
             # almost all where conditions are now in SELECT clause, so
             # WHERE should contain only test against that conditions are true
             query.add_extra(
@@ -251,12 +251,7 @@ class SQLUpdateCompiler(compiler.SQLUpdateCompiler, SphinxQLCompiler):
         if node and need_replace:
             sql, args = self.as_replace(node)
         else:
-
-            match = getattr(self.query, 'match', None)
-            if match:
-                # add match extra where
-                self._add_match_extra(match)
-
+            self._add_match_extra(self.query, self.query.where)
             sql, args = super().as_sql()
         return sql, args
 
