@@ -75,17 +75,18 @@ WSGI_APPLICATION = 'testproject.wsgi.application'
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
 
 SPHINX_DATABASE_NAME = 'default'
+SPHINX_HOST = os.getenv('SPHINX_HOST', '127.0.0.1')
 
 DATABASES = {
     SPHINX_DATABASE_NAME: {
         'ENGINE': 'sphinxsearch.backend.sphinx',
-        'HOST': 'sphinxsearch',
+        'HOST': SPHINX_HOST,
         'PORT': 9307,
         'NAME': 'sphinx',
     },
     "cloned": {
         'ENGINE': 'sphinxsearch.backend.sphinx',
-        'HOST': 'sphinxsearch',
+        'HOST': SPHINX_HOST,
         'PORT': 9307,
         'NAME': 'sphinx_x',
     }
