@@ -2,7 +2,7 @@
 
 [SphinxSearch](http://sphinxsearch.com) database backend for [Django](https://www.djangoproject.com/).
 
-[![Build Status](https://travis-ci.org/tumb1er/django_sphinxsearch.svg)](https://travis-ci.org/tumb1er/django_sphinxsearch)
+![build](https://github.com/tumb1er/django_sphinxsearch/workflows/build/badge.svg?branch=master)
 [![codecov](https://codecov.io/gh/tumb1er/django_sphinxsearch/branch/master/graph/badge.svg)](https://codecov.io/gh/tumb1er/django_sphinxsearch)
 [![PyPI version](https://badge.fury.io/py/django_sphinxsearch.svg)](http://badge.fury.io/py/django_sphinxsearch)
 
