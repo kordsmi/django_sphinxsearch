@@ -712,11 +712,15 @@ class DatabaseOperationsTestCase(SphinxModelTestCaseBase):
         self.assertIsNotNone(obj1)
 
     def test_transaction_with_savepoint_smoke(self):
-        """ Check opening and closing transactions with a savepoint. """
+        """
+        Opening and closing transaction with a savepoint doesn't cause error
+        """
         with transaction.atomic(savepoint=True):
             pass
 
     def test_transaction_without_savepoint_smoke(self):
-        """ Check opening and closing transactions without a savepoint. """
+        """
+        Opening and closing transaction without a savepoint doesn't cause error
+        """
         with transaction.atomic(savepoint=False):
             pass
