@@ -88,18 +88,24 @@ class SphinxQLCompiler(compiler.SQLCompiler):
     def as_sql(self, with_limits=True, with_col_aliases=False, subquery=False):
         """ Patching final SQL query."""
         query = self.query
-        # replacing WHERE node with sphinx-aware node implementation
-        where, query.where = query.where, sqls.SphinxWhereNode()
-        # Adding MATCH() node to WHERE node if needed
-        self._add_match_extra(query)
-        # moving where conditions to SELECT clause because of better support
-        # of SQL expressions in sphinxsearch.
         try:
-            self._add_where_result(query, where)
-        finally:
+            where_sql, where_params = query.where.as_sql(self, self.connection)
+        except EmptyResultSet:
             # Where node compiled to always-false condition, but we still need
             # to call pre_sql_setup() and other methods by super().as_sql
-            sql, args = super().as_sql(with_limits, with_col_aliases)
+            pass
+        else:
+            # creating WHERE node with sphinx-aware node implementation if
+            # everything is fine
+            where = sqls.SphinxWhereNode()
+            # Adding MATCH() node to WHERE node if needed
+            self._add_match_extra(query, where)
+            query.where = where
+            # Adding where conditions to SELECT clause because of better
+            # support of SQL expressions in sphinxsearch.
+            self._add_where_result(query, where_sql, where_params)
+
+        sql, args = super().as_sql(with_limits, with_col_aliases)
 
         # empty SQL doesn't need patching
         if (sql, args) == ('', ()):
@@ -138,14 +144,13 @@ class SphinxQLCompiler(compiler.SQLCompiler):
             args += tuple(values)
         return sql, args
 
-    def _add_where_result(self, query, where):
-        where_sql, where_params = where.as_sql(self, self.connection)
+    def _add_where_result(self, query, where_sql, where_params):
+        # Without annotation queryset.count() receives 1 as where_result
+        # and count it as aggregation result.
         if where_sql:
-            # Without annotation queryset.count() receives 1 as where_result
-            # and count it as aggregation result.
             query.add_annotation(
-                sqls.SphinxWhereExpression(where_sql, where_params),
-                '__where_result')
+            sqls.SphinxWhereExpression(where_sql, where_params),
+            '__where_result')
             # almost all where conditions are now in SELECT clause, so
             # WHERE should contain only test against that conditions are true
             query.add_extra(
@@ -168,7 +173,7 @@ class SphinxQLCompiler(compiler.SQLCompiler):
             result.append("%s %s" % (col, order))
         return " WITHIN GROUP ORDER BY " + ", ".join(result)
 
-    def _add_match_extra(self, query):
+    def _add_match_extra(self, query, where):
         """ adds MATCH clause to query.where """
         # Adding match node if needed
         match = getattr(query, 'match', None)
@@ -206,7 +211,7 @@ class SphinxQLCompiler(compiler.SQLCompiler):
         match_expr = u"MATCH('%s')" % u' '.join(map(decode, expression))
 
         # add MATCH() to query.where
-        query.where.add(sqls.SphinxExtraWhere([match_expr], []), AND)
+        where.add(sqls.SphinxExtraWhere([match_expr], []), AND)
 
 
 # Set SQLCompiler appropriately, so queries will use the correct compiler.
