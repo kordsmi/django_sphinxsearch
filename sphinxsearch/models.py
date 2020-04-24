@@ -1,4 +1,5 @@
 # coding: utf-8
+import warnings
 from copy import copy
 
 from django.conf import settings
@@ -227,6 +228,15 @@ class SphinxQuerySet(QuerySet):
             super()._fetch_all()
             if getattr(self.query, 'with_meta', False):
                 self._fetch_meta()
+
+    def select_for_update(self, nowait=False, skip_locked=False, of=()):
+        """ Sphinx doesn't support select_for_update, so make stub.
+
+        That method is not usefull for search index but is used by many others
+        queryset methods, for example update_or_create.
+        """
+        warnings.warn("Sphinx warning: select_for_update doesn't do a lock.")
+        return self
 
 
 class SphinxManager(models.Manager):

@@ -7,4 +7,17 @@ services:
             - "9307:9307"
         volumes:
             - "./test_config/:/opt/sphinx/conf/"
-            - "/tmp/:/sphinxdata/indexes/"
+            - "./tmp/:/sphinxdata/indexes/"
+
+    django:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: django_sphinx
+        command: python manage.py test -v 1 --noinput
+        depends_on:
+            - sphinxsearch
+        volumes:
+            - "./:/app"
+        ports:
+            - "8005:8005"

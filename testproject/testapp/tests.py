@@ -4,10 +4,10 @@ from datetime import timedelta
 import pytz
 import re
 from django.conf import settings
-from django.db import connections
+from django.db import connections, transaction
 from django.db.models import Sum, Q
 from django.db.utils import ProgrammingError
-from django.test import TransactionTestCase, utils
+from django.test import utils, TestCase
 from django.utils import timezone
 
 from sphinxsearch.routers import SphinxRouter
@@ -15,14 +15,10 @@ from sphinxsearch.utils import sphinx_escape
 from testapp import models
 
 
-class SphinxModelTestCaseBase(TransactionTestCase):
+class SphinxModelTestCaseBase(TestCase):
     _id = 0
 
     model = models.TestModel
-
-    def _fixture_teardown(self):
-        # Prevent SHOW FULL TABLES call
-        pass
 
     def truncate_model(self):
         conn = connections[settings.SPHINX_DATABASE_NAME]
@@ -121,6 +117,11 @@ class SphinxModelTestCase(SphinxModelTestCaseBase):
         qs = self.model.objects.match("nonexistent")
         self.assertEqual(qs.count(), 0)
         self.assertEqual(len(qs[:0]), 0)
+
+    def testLenOfAnotherEmptySet(self):
+        qs = self.model.objects.all()[0:0]
+        self.assertEqual(len(qs[0:0]), 0)
+        self.assertEqual(qs.count(), 0)
 
     def testGroupByExtraSelect(self):
         qs = self.model.objects.all()
@@ -236,6 +237,18 @@ class SphinxModelTestCase(SphinxModelTestCaseBase):
         qs.update(attr_bool=not self.defaults['attr_bool'])
         other = self.reload_object(self.obj)
         self.assertFalse(other.attr_bool)
+
+    def testUpdateOrCreate(self):
+        exp= (({'id': self.defaults['id']}, {'attr_uint': 555}),
+              ({'id': self.new_id()}, {'attr_uint': 666}))
+
+        for param in exp:
+            self.model.objects.update_or_create(**param[0], defaults=param[1])
+
+        act = [({'id': o.id}, {'attr_uint': o.attr_uint})
+               for o in self.model.objects.all()]
+
+        self.assertCountEqual(exp, act)
 
     def testDelete(self):
         if self.no_string_compare:  # pragma: no cover
@@ -697,3 +710,17 @@ class DatabaseOperationsTestCase(SphinxModelTestCaseBase):
 
         obj1 = self.model.objects.using('cloned').get(pk=obj.pk)
         self.assertIsNotNone(obj1)
+
+    def test_transaction_with_savepoint_smoke(self):
+        """
+        Opening and closing transaction with a savepoint doesn't cause error
+        """
+        with transaction.atomic(savepoint=True):
+            pass
+
+    def test_transaction_without_savepoint_smoke(self):
+        """
+        Opening and closing transaction without a savepoint doesn't cause error
+        """
+        with transaction.atomic(savepoint=False):
+            pass

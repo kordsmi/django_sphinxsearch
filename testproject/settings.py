@@ -79,13 +79,13 @@ SPHINX_DATABASE_NAME = 'default'
 DATABASES = {
     SPHINX_DATABASE_NAME: {
         'ENGINE': 'sphinxsearch.backend.sphinx',
-        'HOST': '127.0.0.1',
+        'HOST': 'sphinxsearch',
         'PORT': 9307,
         'NAME': 'sphinx',
     },
     "cloned": {
         'ENGINE': 'sphinxsearch.backend.sphinx',
-        'HOST': '127.0.0.1',
+        'HOST': 'sphinxsearch',
         'PORT': 9307,
         'NAME': 'sphinx_x',
     }
