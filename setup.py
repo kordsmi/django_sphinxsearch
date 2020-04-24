@@ -1,8 +1,9 @@
 import os
 import re
 import subprocess
-from setuptools import setup
 from pathlib import Path
+
+from setuptools import setup  # type: ignore
 
 with open('README.md') as f:
     long_description = f.read()
@@ -17,7 +18,7 @@ def get_version():
 
     https://gist.github.com/pwithnall/7bc5f320b3bdf418265a
     """
-    d: Path = Path(__file__).parent.absolute()
+    d: Path = Path(__file__).absolute().parent
     git_dir = d.joinpath('.git')
     if git_dir.is_dir():
         # Get the version using "git describe".
@@ -59,7 +60,7 @@ def get_version():
 
 setup(
     name=package_name,
-    version=get_version(),
+    version=get_version() or 'dev',
     long_description=long_description,
     long_description_content_type='text/markdown',
     packages=[
