@@ -1,4 +1,4 @@
-mysqlclient==1.4.6
+mysqlclient==2.0.0
 tblib==1.6.0
 pytz==2020.1
 Django==3.0.8
