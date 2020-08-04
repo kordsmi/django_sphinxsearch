@@ -11,6 +11,7 @@ jobs:
         python-version: 3.8
     - name: Generate coverage report
       run: |
+        pip install -U pip
         docker-compose up -d sphinxsearch
         pip install -r test-requires.txt
         pip install coverage

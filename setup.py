@@ -75,7 +75,7 @@ setup(
     description='Sphinxsearch database backend for django>=2.0',
     setup_requires=[
         'Django>=2.0,<3.1',
-        'mysqlclient>=1.4.4,<1.5.0',
+        'mysqlclient>=1.4.4,<2.1.0',
         'pytz'
     ],
 )
