@@ -20,17 +20,11 @@ jobs:
     - name: Install Dependencies
       run: |
         docker-compose up -d sphinxsearch
-        echo "Upgrade pip:"
-        python -m pip install --upgrade pip
-        echo "Debug wheel:"
-        python -m wheel
+        python -m pip install --upgrade pip wheel
         echo "Python ${{ matrix.python-version }} -> Django ${{ matrix.django-version }}"
         sed -i '/Django==.*/d' ./test-requires.txt # delete django dependency
-        echo "Install test requires:"
         pip install -r test-requires.txt
-        echo "Install Django: ${{ matrix.django-version }}.0"
         python -m pip install "Django~=${{ matrix.django-version }}.0"
-        echo "Install django-sphinxsearch:"
         pip install -q -e .
         echo "Django: `django-admin --version`"
         python --version
