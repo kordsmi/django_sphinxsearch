@@ -46,10 +46,10 @@ class SphinxCreation(creation.DatabaseCreation):
 
     def __no_db_cursor(self):
         try:
-            return self._nodb_connection.cursor()
+            return self._nodb_connection.cursor()  # noqa
         except AttributeError:
             # Django-3.1+
-            return self._nodb_cursor()
+            return self._nodb_cursor()  # noqa
 
     def create_test_db(self, *args, **kwargs):
         # NOOP, test using regular sphinx database.
