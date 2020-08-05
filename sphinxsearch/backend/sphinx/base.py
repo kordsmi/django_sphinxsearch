@@ -10,10 +10,13 @@ from django.utils.functional import cached_property
 
 class SphinxOperations(base.DatabaseOperations):
 
+    compiler_module = "sphinxsearch.backend.sphinx.compiler"
+
+    def json_cast_text_sql(self, field_name):
+        pass
+
     def regex_lookup(self, lookup_type):
         raise NotImplementedError()
-
-    compiler_module = "sphinxsearch.backend.sphinx.compiler"
 
     def force_no_ordering(self):
         """ Fix unsupported syntax "ORDER BY NULL"."""
@@ -41,6 +44,13 @@ class SphinxValidation(base.DatabaseValidation):
 
 class SphinxCreation(creation.DatabaseCreation):
 
+    def __no_db_cursor(self):
+        try:
+            return self._nodb_connection.cursor()
+        except AttributeError:
+            # Django-3.1+
+            return self.__no_db_cursor()
+
     def create_test_db(self, *args, **kwargs):
         # NOOP, test using regular sphinx database.
         if self.connection.settings_dict.get('TEST_NAME'):
@@ -65,7 +75,7 @@ class SphinxCreation(creation.DatabaseCreation):
         src_prefix = f'{src_db_name}___'
         sys.stdout.write(
             f"Cloning sphinxsearch tables for alias {src_db_name}...\n")
-        with self._nodb_connection.cursor() as cursor:
+        with self.__no_db_cursor() as cursor:
             cursor.execute("SHOW TABLES")
             for table_name, index_type in cursor.fetchall():
                 if not table_name.startswith(src_prefix):
@@ -82,7 +92,7 @@ class SphinxCreation(creation.DatabaseCreation):
         }
         _, main_table_name = table_name.split('___', 1)
         new_table_name = f'{src_db_name}_{suffix}___{main_table_name}'
-        with self._nodb_connection.cursor() as cursor:
+        with self.__no_db_cursor() as cursor:
             cursor.execute(f"DESCRIBE {table_name}")
             sql = [f"CREATE TABLE {new_table_name} ("]
             columns = OrderedDict()
