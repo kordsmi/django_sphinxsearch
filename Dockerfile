@@ -4,5 +4,5 @@ WORKDIR /app
 
 RUN pip install --upgrade pip
 
-COPY ./test-requires.txt /tmp/test-requires.txt
-RUN pip install -r /tmp/test-requires.txt
+COPY ./requirements.txt /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt
