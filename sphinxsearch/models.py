@@ -17,8 +17,7 @@ class SphinxQuerySet(QuerySet):
         kwargs.setdefault('query', sql.SphinxQuery(model))
         super().__init__(model, **kwargs)
 
-    def _filter_or_exclude(self, negate, *args, **kwargs):
-        args = list(args)
+    def _filter_or_exclude(self, negate, args, kwargs):
         kwargs = copy(kwargs)
         for key, value in list(kwargs.items()):
             field, lookup = self.__get_field_lookup(key)
@@ -32,7 +31,7 @@ class SphinxQuerySet(QuerySet):
                 kwargs.pop(key, None)
             pass
 
-        return super()._filter_or_exclude(negate, *args, **kwargs)
+        return super()._filter_or_exclude(negate, args, kwargs)
 
     # noinspection PyProtectedMember
     def __get_field_lookup(self, key):

@@ -1,9 +1,8 @@
-# coding: utf-8
 import re
 
-from django.core.exceptions import FieldError, EmptyResultSet
+from django.core.exceptions import FieldError, EmptyResultSet, FullResultSet
 from django.db import models
-from django.db.models.expressions import Random
+from django.db.models.functions import Random
 from django.db.models.lookups import Exact
 from django.db.models.sql import compiler, AND
 from django.db.models.sql.constants import ORDER_DIR
@@ -90,20 +89,14 @@ class SphinxQLCompiler(compiler.SQLCompiler):
         query = self.query
         try:
             where_sql, where_params = query.where.as_sql(self, self.connection)
+            self._add_where_condition(query, where_sql, where_params)
         except EmptyResultSet:
             # Where node compiled to always-false condition, but we still need
             # to call pre_sql_setup() and other methods by super().as_sql
             pass
-        else:
-            # creating WHERE node with sphinx-aware node implementation if
-            # everything is fine
-            where = sqls.SphinxWhereNode()
-            # Adding MATCH() node to WHERE node if needed
-            self._add_match_extra(query, where)
-            query.where = where
-            # Adding where conditions to SELECT clause because of better
-            # support of SQL expressions in sphinxsearch.
-            self._add_where_result(query, where_sql, where_params)
+        except FullResultSet:
+            where_sql, where_params = '', []
+            self._add_where_condition(query, where_sql, where_params)
 
         sql, args = super().as_sql(with_limits, with_col_aliases)
 
@@ -143,6 +136,20 @@ class SphinxQLCompiler(compiler.SQLCompiler):
             sql += ' OPTION %s' % ', '.join(opts) or ''
             args += tuple(values)
         return sql, args
+
+    def _add_where_condition(self, query, where_sql, where_params):
+        # Повторно MATCH не нужно добавлять
+        # if where_sql.startswith('MATCH') or where_sql.startswith('(MATCH'):
+        #     return
+        # creating WHERE node with sphinx-aware node implementation if
+        # everything is fine
+        where = sqls.SphinxWhereNode()
+        # Adding MATCH() node to WHERE node if needed
+        self._add_match_extra(query, where)
+        query.where = where
+        # Adding where conditions to SELECT clause because of better
+        # support of SQL expressions in sphinxsearch.
+        self._add_where_result(query, where_sql, where_params)
 
     def _add_where_result(self, query, where_sql, where_params):
         # Without annotation queryset.count() receives 1 as where_result

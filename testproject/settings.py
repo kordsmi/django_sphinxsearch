@@ -115,3 +115,5 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 SILENCED_SYSTEM_CHECKS = ['models.E028']
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

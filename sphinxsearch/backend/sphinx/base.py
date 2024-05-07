@@ -146,6 +146,8 @@ class SphinxFeatures(base.DatabaseFeatures):
     uses_savepoints = True
     supports_column_check_constraints = False
     is_sql_auto_is_null_enabled = False
+    minimum_database_version = (3,)
+    allows_group_by_selected_pks = False
 
 
 class DatabaseWrapper(base.DatabaseWrapper):
@@ -188,3 +190,15 @@ class DatabaseWrapper(base.DatabaseWrapper):
     def _savepoint_commit(self, sid):
         warnings.warn("Sphinx warning: Sphinx doesn't support savepoints, "
                       "only emulates them. Commit is not done.")
+
+    @cached_property
+    def mysql_server_data(self):
+        # Заглушка
+        return {
+            "version": '8',
+            "sql_mode": 'SQL',
+            "default_storage_engine": '',
+            "sql_auto_is_null": True,
+            "lower_case_table_names": False,
+            "has_zoneinfo_database": True,
+        }

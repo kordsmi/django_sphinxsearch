@@ -55,8 +55,9 @@ class SphinxQuery(Query):
                  'with_meta')
 
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault('where', SphinxWhereNode)
         super().__init__(*args, **kwargs)
+        kwargs.setdefault('where', SphinxWhereNode())
+        self.where = kwargs.pop('where')
 
     def clone(self):
         query = super().clone()
@@ -88,8 +89,7 @@ class SphinxQuery(Query):
         Performs a COUNT() query using the current filter constraints.
         """
         obj = self.clone()
-        obj.add_annotation(SphinxCount('*'), alias='__count', is_summary=True)
-        number = obj.get_aggregation(using, ['__count'])['__count']
+        number = obj.get_aggregation(using, {"__count": SphinxCount("*")})["__count"]
         if number is None:
             number = 0
         return number
