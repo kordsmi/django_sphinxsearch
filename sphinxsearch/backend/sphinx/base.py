@@ -146,7 +146,7 @@ class SphinxFeatures(base.DatabaseFeatures):
     uses_savepoints = True
     supports_column_check_constraints = False
     is_sql_auto_is_null_enabled = False
-    minimum_database_version = (3,)
+    minimum_database_version = (2,)
     allows_group_by_selected_pks = False
 
 

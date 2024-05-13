@@ -7,8 +7,8 @@
 [![PyPI version](https://badge.fury.io/py/django-sphinxsearch.svg)](https://badge.fury.io/py/django-sphinxsearch)
 
 * Not a [django_sphinx_db](https://github.com/smartfile/django-sphinx-db) fork
-* `Django>=2.0,<3.1` supported
-* Tested against Django-2.2 (LTS) and Django-3.0
+* `Django>=4.2,<5` supported
+* Tested against Django-4.2 (LTS) and Django-4.2.11
 
 ## Installation and usage
 
